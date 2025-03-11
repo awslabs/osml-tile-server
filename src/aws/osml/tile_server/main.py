@@ -1,4 +1,4 @@
-#  Copyright 2023-2024 Amazon.com, Inc. or its affiliates.
+#  Copyright 2023-2025 Amazon.com, Inc. or its affiliates.
 
 import logging
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
@@ -110,6 +110,7 @@ app = VersionedFastAPI(
         "name": "Amazon Web Services",
     },
     lifespan=lifespan,
+    root_path=ServerConfig.api_root_path,
 )
 app.add_middleware(
     CORSMiddleware,
@@ -141,8 +142,8 @@ async def root() -> str:
             <p>{app.description}.</p>
             <p>If you need help or support,
                 please cut an issue ticket <a href="{app.contact["url"]}">in our github project</a>.</p>
-            <p><a href="/latest/docs">Swagger</a></p>
-            <p><a href="/latest/redoc">ReDoc</a></p>
+            <p><a href="{ServerConfig.api_root_path}/latest/docs">Swagger</a></p>
+            <p><a href="{ServerConfig.api_root_path}/latest/redoc">ReDoc</a></p>
             <p>The license of this product: {app.license_info["license"]}</p>
         </body>
     </html>
