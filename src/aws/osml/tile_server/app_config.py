@@ -1,4 +1,4 @@
-#  Copyright 2023-2024 Amazon.com, Inc. or its affiliates.
+#  Copyright 2023-2025 Amazon.com, Inc. or its affiliates.
 
 import logging
 import os
@@ -30,6 +30,7 @@ class ServerConfig:
     efs_mount_name: str = os.getenv("EFS_MOUNT_NAME", "ts-efs-volume")
     sts_arn: str = os.getenv("STS_ARN", None)
     ddb_ttl_days: int = os.getenv("DDB_TTL_DAYS", 1)
+    api_root_path: str = os.getenv("FASTAPI_ROOT_PATH", "")
     tile_server_log_level = logging.INFO
 
     OVERVIEW_FILE_EXTENSION = ".ovr"
