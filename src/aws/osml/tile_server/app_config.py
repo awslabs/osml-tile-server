@@ -1,4 +1,4 @@
-#  Copyright 2023-2025 Amazon.com, Inc. or its affiliates.
+#  Copyright 2023-2026 Amazon.com, Inc. or its affiliates.
 
 import logging
 import os
@@ -32,6 +32,8 @@ class ServerConfig:
     ddb_ttl_days: int = os.getenv("DDB_TTL_DAYS", 1)
     api_root_path: str = os.getenv("FASTAPI_ROOT_PATH", "")
     tile_server_log_level = logging.INFO
+    tile_provider_cached_tile_count: int = int(os.getenv("TILE_PROVIDER_CACHED_TILE_COUNT", 400))
+    cache_control_max_age: int = int(os.getenv("CACHE_CONTROL_MAX_AGE", 604800))
 
     OVERVIEW_FILE_EXTENSION = ".ovr"
     AUXXML_FILE_EXTENSION = ".aux.xml"
