@@ -1,4 +1,4 @@
-#  Copyright 2023-2024 Amazon.com, Inc. or its affiliates.
+#  Copyright 2023-2025 Amazon.com, Inc. or its affiliates.
 
 import logging
 import threading
@@ -103,8 +103,7 @@ class TileFactoryPool:
         """
         tf = None
         with self.lock:
-            if self.current_inventory:
-                tf = self.current_inventory.pop(0)
+            tf = self.current_inventory.pop(0) if self.current_inventory else None
 
         if tf is None:
             thread_id = threading.get_native_id()
