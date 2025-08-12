@@ -1,6 +1,6 @@
 # Copyright 2023-2025 Amazon.com, Inc. or its affiliates.
 
-FROM public.ecr.aws/amazonlinux/amazonlinux:2023-minimal as build
+FROM public.ecr.aws/amazonlinux/amazonlinux:2023-minimal AS build
 
 # Only override if you're using a mirror with a cert pulled in using cert-base as a build parameter
 ARG BUILD_CERT=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
@@ -48,16 +48,16 @@ RUN conda env create -n ${CONDA_ENV_NAME} --file environment.yml && \
 COPY . osml-tile-server
 
 # Install the model runner application
-RUN . /opt/conda/etc/profile.d/conda.sh && \
-    conda activate ${CONDA_ENV_NAME} && \
-    python3 -m pip install --no-cache-dir osml-tile-server/.
+# Use conda run to avoid bash completion issues
+RUN conda run -n ${CONDA_ENV_NAME} python3 -m pip install --no-cache-dir osml-tile-server/.
 
-FROM public.ecr.aws/amazonlinux/amazonlinux:2023-minimal as tile_server
+FROM public.ecr.aws/amazonlinux/amazonlinux:2023-minimal AS tile_server
 
 # Add conda to the path
+ARG CONDA_ENV_NAME="osml_tile_server"
 ENV PATH=/opt/conda/bin:$PATH
 ENV PYTHONPATH=/opt/conda/envs/${CONDA_ENV_NAME}/bin
-ENV CONDA_ENV_NAME="osml_tile_server"
+ENV CONDA_ENV_NAME=${CONDA_ENV_NAME}
 
 # Copy the conda environment from the build stage
 COPY --from=build /opt/conda /opt/conda
@@ -74,9 +74,8 @@ RUN BASE_PYTHON_PATH=$(command -v python3) \
 ADD . .
 
 # Install the package into the base image
-RUN . /opt/conda/etc/profile.d/conda.sh && \
-    conda activate ${CONDA_ENV_NAME} && \
-    python3 -m pip install --no-cache-dir .
+# Use conda run to avoid bash completion issues
+RUN conda run -n ${CONDA_ENV_NAME} python3 -m pip install --no-cache-dir .
 
 # Set up a health check at that port
 HEALTHCHECK NONE
