@@ -1,4 +1,4 @@
-# Copyright 2023-2024 Amazon.com, Inc. or its affiliates.
+# Copyright 2023-2025 Amazon.com, Inc. or its affiliates.
 
 FROM public.ecr.aws/amazonlinux/amazonlinux:2023-minimal as tile_server
 
@@ -40,6 +40,11 @@ ENV PROJ_LIB=/opt/conda/share/proj
 
 # Copy our conda env configuration
 COPY conda/environment.yml .
+
+# Accept Conda TOS before creating the environment
+RUN conda config --set always_yes true && \
+    conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main && \
+    conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
 
 # Create the conda env
 RUN conda env create -n ${CONDA_TARGET_ENV} --file environment.yml && \

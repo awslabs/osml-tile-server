@@ -1,4 +1,4 @@
-#  Copyright 2023-2024 Amazon.com, Inc or its affiliates.
+#  Copyright 2023-2025 Amazon.com, Inc or its affiliates.
 
 import json
 import os
@@ -88,6 +88,11 @@ class TestRouterE2E(TestCase):
         tmp_viewpoints_path = os.path.join("test_tmp", "viewpoints")
         if os.path.isdir(tmp_viewpoints_path):
             shutil.rmtree(tmp_viewpoints_path)
+
+        # Clear the tile factory pool cache to prevent shared state between tests
+        from aws.osml.tile_server.utils.tile_server_utils import get_tile_factory_pool
+
+        get_tile_factory_pool.cache_clear()
 
     def mock_set_ready(self, viewpoint_id):
         """Mock the update of a viewpoint's status to READY."""
