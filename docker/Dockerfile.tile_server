@@ -31,6 +31,11 @@ RUN wget -c ${MINICONDA_URL} \
 # Copy conda ENV
 COPY conda/environment.yml .
 
+# Accept Conda TOS before creating the environment
+RUN conda config --set always_yes true && \
+    conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main && \
+    conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
+
 # Install python with conda
 RUN conda env create -n ${CONDA_ENV_NAME} --file environment.yml && \
     conda clean -afy && \
