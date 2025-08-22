@@ -74,7 +74,9 @@ RUN BASE_PYTHON_PATH=$(command -v python3) \
 ADD . .
 
 # Install the package into the base image
-RUN python3 -m pip install --no-cache-dir .
+RUN . /opt/conda/etc/profile.d/conda.sh && \
+    conda activate ${CONDA_ENV_NAME} && \
+    python3 -m pip install --no-cache-dir .
 
 # Set up a health check at that port
 HEALTHCHECK NONE
@@ -82,4 +84,7 @@ HEALTHCHECK NONE
 # Make sure we expose our ports
 EXPOSE 8080
 
-ENTRYPOINT ["/bin/bash", "-c", "uvicorn --host 0.0.0.0 --port 8080 aws.osml.tile_server.main:app"]
+ENTRYPOINT ["/bin/bash", "-c", "\
+    . /opt/conda/etc/profile.d/conda.sh && \
+    conda activate ${CONDA_ENV_NAME} && \
+    uvicorn --host 0.0.0.0 --port 8080 aws.osml.tile_server.main:app"]
