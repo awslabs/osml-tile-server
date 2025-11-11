@@ -5,6 +5,10 @@ on:
   push:
     branches: ["main"]
 
+permissions:
+  contents: read
+  actions: write
+
 jobs:
   notify:
     runs-on: ubuntu-latest
