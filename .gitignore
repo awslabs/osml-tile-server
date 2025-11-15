@@ -23,6 +23,10 @@ __pycache__/
 *.egg-info/
 build/
 dist/
+cdk/cdk.out/
+cdk/node_modules/
+cdk/lib/constructs/test/Dockerfile.tmp
+cdk/cdk.context.json
 
 # Coverage reports
 .coverage
@@ -40,3 +44,6 @@ tox_conda_tmp*
 doc/_apidoc/
 doc/_spec/
 doc/autoapi/
+
+# Config
+cdk/bin/deployment/deployment.json

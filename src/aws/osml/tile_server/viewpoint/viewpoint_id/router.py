@@ -1,4 +1,4 @@
-#  Copyright 2024 Amazon.com, Inc. or its affiliates.
+#  Copyright 2024-2025 Amazon.com, Inc. or its affiliates.
 
 import shutil
 from pathlib import Path
@@ -30,8 +30,11 @@ def describe_viewpoint(viewpoint_id: str, aws: Annotated[get_aws_services, Depen
     :param viewpoint_id: Unique viewpoint id to get from the table.
     :return: Details from the viewpoint item in the table.
     """
-    viewpoint_item = aws.viewpoint_database.get_viewpoint(viewpoint_id)
-    return viewpoint_item
+    try:
+        viewpoint_item = aws.viewpoint_database.get_viewpoint(viewpoint_id)
+        return viewpoint_item
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to describe viewpoint")
 
 
 @viewpoint_id_router.delete("", status_code=status.HTTP_204_NO_CONTENT)
@@ -51,9 +54,12 @@ def delete_viewpoint(viewpoint_id: str, aws: Annotated[get_aws_services, Depends
 
     validate_viewpoint_status(viewpoint_item.viewpoint_status, ViewpointApiNames.UPDATE)
 
-    if viewpoint_item:
-        shutil.rmtree(Path(viewpoint_item.local_object_path).parent, ignore_errors=True)
-    aws.viewpoint_database.delete_viewpoint(viewpoint_id)
+    try:
+        if viewpoint_item:
+            shutil.rmtree(Path(viewpoint_item.local_object_path).parent, ignore_errors=True)
+        aws.viewpoint_database.delete_viewpoint(viewpoint_id)
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to delete viewpoint")
 
 
 viewpoint_id_router.include_router(image_router)

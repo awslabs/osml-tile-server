@@ -1,4 +1,4 @@
-#  Copyright 2023-2024 Amazon.com, Inc. or its affiliates.
+#  Copyright 2023-2025 Amazon.com, Inc. or its affiliates.
 
 import json
 from decimal import Decimal
@@ -8,7 +8,6 @@ from typing import Any, Dict, Tuple
 from boto3.dynamodb.conditions import Attr
 from boto3.resources.base import ServiceResource
 from botocore.exceptions import ClientError
-from fastapi import HTTPException
 
 from aws.osml.tile_server.app_config import ServerConfig
 from aws.osml.tile_server.models import ViewpointListResponse, ViewpointModel
@@ -79,17 +78,14 @@ class ViewpointStatusTable:
                 return self.get_paged_viewpoints(query_params)
             return self.get_all_viewpoints(query_params)
         except ClientError as err:
-            raise HTTPException(
-                status_code=err.response["Error"]["Code"],
-                detail=f"Cannot fetch an item from ViewpointStatusTable, error: {err.response['Error']['Message']}",
-            )
+            self.logger.error(f"Cannot fetch an item from ViewpointStatusTable, error: {err.response['Error']['Message']}")
+            raise
         except KeyError as err:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Invalid Key, it does not exist in ViewpointStatusTable. Please create a new request! {err}",
-            )
+            self.logger.error(f"Invalid Key, it does not exist in ViewpointStatusTable. Please create a new request! {err}")
+            raise
         except Exception as err:
-            raise HTTPException(status_code=500, detail=f"Something went wrong with ViewpointStatusTable! Error: {err}")
+            self.logger.error(f"Something went wrong with ViewpointStatusTable! Error: {err}")
+            raise
 
     def get_all_viewpoints(self, query_params: Dict) -> ViewpointListResponse:
         """
@@ -131,17 +127,14 @@ class ViewpointStatusTable:
             response = self.table.get_item(Key={"viewpoint_id": viewpoint_id})["Item"]
             return ViewpointModel.model_validate_json(json.dumps(response, cls=DecimalEncoder))
         except ClientError as err:
-            raise HTTPException(
-                status_code=err.response["Error"]["Code"],
-                detail=f"Cannot fetch an item from ViewpointStatusTable, error: {err.response['Error']['Message']}",
-            )
+            self.logger.error(f"Cannot fetch an item from ViewpointStatusTable, error: {err.response['Error']['Message']}")
+            raise
         except KeyError as err:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Invalid Key, it does not exist in ViewpointStatusTable. Please create a new request! {err}",
-            )
+            self.logger.error(f"Invalid Key, it does not exist in ViewpointStatusTable. Please create a new request! {err}")
+            raise
         except Exception as err:
-            raise HTTPException(status_code=500, detail=f"Something went wrong with ViewpointStatusTable! Error: {err}")
+            self.logger.error(f"Something went wrong with ViewpointStatusTable! Error: {err}")
+            raise
 
     def create_viewpoint(self, viewpoint_request: ViewpointModel) -> Dict:
         """
@@ -158,10 +151,8 @@ class ViewpointStatusTable:
             self.table.put_item(Item=viewpoint_request_dict)
             return viewpoint_request_dict
         except ClientError as err:
-            raise HTTPException(
-                status_code=err.response["Error"]["Code"],
-                detail=f"Cannot write to ViewpointStatusTable, error: {err.response['Error']['Message']}",
-            )
+            self.logger.error(f"Cannot write to ViewpointStatusTable, error: {err.response['Error']['Message']}")
+            raise
 
     def update_viewpoint(self, viewpoint_item: ViewpointModel) -> ViewpointModel:
         """
@@ -187,14 +178,11 @@ class ViewpointStatusTable:
             return ViewpointModel.model_validate_json(json.dumps(response["Attributes"], cls=DecimalEncoder))
 
         except ClientError as err:
-            raise HTTPException(
-                status_code=err.response["Error"]["Code"],
-                detail=f"Cannot write to ViewpointStatusTable, error: {err.response['Error']['Message']}",
-            )
+            self.logger.error(f"Cannot write to ViewpointStatusTable, error: {err.response['Error']['Message']}")
+            raise
         except Exception as err:
-            raise HTTPException(
-                status_code=500, detail=f"Something went wrong when updating an item in ViewpointStatusTable! Error: {err}"
-            )
+            self.logger.error(f"Something went wrong when updating an item in ViewpointStatusTable! Error: {err}")
+            raise
 
     def delete_viewpoint(self, viewpoint_id: str) -> str:
         """
@@ -208,15 +196,13 @@ class ViewpointStatusTable:
             self.table.delete_item(Key={"viewpoint_id": viewpoint_id})
             return viewpoint_id
         except ClientError as err:
-            raise HTTPException(
-                status_code=err.response["Error"]["Code"],
-                detail=f"Cannot delete viewpoint from ViewpointStatusTable, error: {err.response['Error']['Message']}",
+            self.logger.error(
+                f"Cannot delete viewpoint from ViewpointStatusTable, error: {err.response['Error']['Message']}"
             )
+            raise
         except Exception as err:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Something went wrong when deleting a viewpoint from ViewpointStatusTable! Error: {err}",
-            )
+            self.logger.error(f"Something went wrong when deleting a viewpoint from ViewpointStatusTable! Error: {err}")
+            raise
 
     @staticmethod
     def get_update_params(body: Dict) -> Tuple[str, Dict[str, Any]]:
