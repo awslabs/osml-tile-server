@@ -1,4 +1,4 @@
-#  Copyright 2023-2024 Amazon.com, Inc. or its affiliates.
+#  Copyright 2023-2025 Amazon.com, Inc. or its affiliates.
 
 import inspect
 import logging
@@ -96,13 +96,16 @@ def list_viewpoints(
     else:
         decrypted_next_token = None
 
-    results = aws.viewpoint_database.get_viewpoints(max_results, decrypted_next_token)
-    if results.next_token:
-        expiration = datetime.now(UTC) + timedelta(days=1)
-        token_string = f"{results.next_token}|{expiration.isoformat()}|{endpoint_version}"
-        encrypted_token = encryptor.encrypt(token_string.encode("utf-8")).decode("utf-8")
-        results.next_token = encrypted_token
-    return results
+    try:
+        results = aws.viewpoint_database.get_viewpoints(max_results, decrypted_next_token)
+        if results.next_token:
+            expiration = datetime.now(UTC) + timedelta(days=1)
+            token_string = f"{results.next_token}|{expiration.isoformat()}|{endpoint_version}"
+            encrypted_token = encryptor.encrypt(token_string.encode("utf-8")).decode("utf-8")
+            results.next_token = encrypted_token
+        return results
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to list viewpoints")
 
 
 @viewpoint_router.post("/", status_code=status.HTTP_201_CREATED)
@@ -146,7 +149,10 @@ def create_viewpoint(
         error_message=None,
         expire_time=int(expire_time.timestamp()),
     )
-    db_response = aws.viewpoint_database.create_viewpoint(new_viewpoint_request)
+    try:
+        db_response = aws.viewpoint_database.create_viewpoint(new_viewpoint_request)
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to create viewpoint")
 
     attributes = {"correlation_id": {"StringValue": correlation_id.get(), "DataType": "String"}}
     # Place this request into SQS, then the worker will pick up in order to download the image from S3
@@ -165,15 +171,18 @@ def update_viewpoint(viewpoint_request: ViewpointUpdate, aws: Annotated[get_aws_
     :param viewpoint_request: Client's request, which contains name, file source, and range type.
     :return: Updated viewpoint item details from the table.
     """
-    viewpoint_item = aws.viewpoint_database.get_viewpoint(viewpoint_request.viewpoint_id)
+    try:
+        viewpoint_item = aws.viewpoint_database.get_viewpoint(viewpoint_request.viewpoint_id)
 
-    validate_viewpoint_status(viewpoint_item.viewpoint_status, ViewpointApiNames.UPDATE)
+        validate_viewpoint_status(viewpoint_item.viewpoint_status, ViewpointApiNames.UPDATE)
 
-    viewpoint_item.viewpoint_name = viewpoint_request.viewpoint_name
-    viewpoint_item.tile_size = viewpoint_request.tile_size
-    viewpoint_item.range_adjustment = viewpoint_request.range_adjustment
+        viewpoint_item.viewpoint_name = viewpoint_request.viewpoint_name
+        viewpoint_item.tile_size = viewpoint_request.tile_size
+        viewpoint_item.range_adjustment = viewpoint_request.range_adjustment
 
-    return aws.viewpoint_database.update_viewpoint(viewpoint_item)
+        return aws.viewpoint_database.update_viewpoint(viewpoint_item)
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to update viewpoint")
 
 
 viewpoint_router.include_router(viewpoint_id_router)

@@ -1,9 +1,10 @@
-#  Copyright 2023-2024 Amazon.com, Inc. or its affiliates.
+#  Copyright 2023-2025 Amazon.com, Inc. or its affiliates.
 
 import json
 import logging
 import time
 import traceback
+from datetime import UTC, datetime, timedelta
 from enum import auto
 from logging import Logger
 from math import degrees
@@ -226,12 +227,16 @@ class ViewpointWorker(Thread):
     def _update_status(self, viewpoint_item: ViewpointModel) -> None:
         """
         Update ddb table to reflect status change after processed by the worker.
+        Sets the viewpoint to not expire (now + 100 years) now that the worker
+        successfully created the other artifacts.
 
         :param viewpoint_item: Item being processed by the worker.
 
         :return: None.
         """
-        viewpoint_item.expire_time = None
+        viewpoint_item.expire_time = viewpoint_item.expire_time = int(
+            (datetime.now(UTC) + timedelta(days=36500)).timestamp()
+        )
         viewpoint_item.viewpoint_status = ViewpointStatus.READY
         self.viewpoint_database.update_viewpoint(viewpoint_item)
 

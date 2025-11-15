@@ -100,10 +100,10 @@ app = VersionedFastAPI(
     contact={
         "name": "Amazon Web Services",
         "email": "aws-osml-admin@amazon.com",
-        "url": "https://github.com/aws-solutions-library-samples/osml-tile-server/issues",
+        "url": "https://github.com/awslabs/osml-tile-server/issues",
     },
     license_info={
-        "license": """Copyright 2023-2024 Amazon Web Services, Inc. or its affiliates. All Rights Reserved.
+        "license": """Copyright Amazon Web Services, Inc. or its affiliates. All Rights Reserved.
         This AWS Content is provided subject to the terms of the AWS Customer Agreement
         available at https://aws.amazon.com/agreement or other written agreement between
         Customer and either Amazon Web Services, Inc. or Amazon Web Services EMEA SARL or both.""",

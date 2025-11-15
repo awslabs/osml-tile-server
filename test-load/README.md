@@ -1,6 +1,6 @@
-# Basic Load Testing with Locust
+# Basic Load Test with Locust
 
-## Quick Start: Local Development Load Testing
+## Quick Start: Local Development Load Test
 Sample configuration files have been provided to run load tests from a local machine. The `test-load/locust_ts_user.py`
 locustfile contains simulated users of the tile server resources.
 

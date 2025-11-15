@@ -1,4 +1,4 @@
-#  Copyright 2023-2024 Amazon.com, Inc or its affiliates.
+#  Copyright 2023-2025 Amazon.com, Inc or its affiliates.
 
 import copy
 from threading import Event
@@ -34,13 +34,169 @@ class TestViewpointWorker(TestCase):
         self.assertTrue(self.worker.daemon)
         self.assertIsInstance(self.worker.stop_event, Event)
 
-    @pytest.mark.skip(reason="Test not implemented")
-    def test_join(self):
-        pass
+    @patch("threading.Thread.join")
+    def test_join(self, mock_thread_join):
+        """Test the join method sets the stop event."""
+        # Call join
+        self.worker.join(timeout=0.1)
 
-    @pytest.mark.skip(reason="Test not implemented")
-    def test_run(self):
-        pass
+        # Verify stop_event was set
+        self.assertTrue(self.worker.stop_event.is_set())
+
+        # Verify Thread.join was called
+        mock_thread_join.assert_called_once_with(self.worker, 0.1)
+
+    @patch("aws.osml.tile_server.viewpoint.worker.ThreadingLocalContextFilter")
+    def test_run_processes_messages(self, mock_context_filter):
+        """Test the run method processes messages from the queue."""
+        # Create a mock message
+        mock_message = MagicMock()
+        mock_message.body = (
+            '{"viewpoint_id": "1", "viewpoint_name": "mock_name", "viewpoint_status": "REQUESTED", '
+            '"bucket_name": "mock_bucket", "object_key": "mock_object", "tile_size": 512, '
+            '"range_adjustment": "NONE", "local_object_path": null, "error_message": null, "expire_time": null}'
+        )
+        mock_message.message_attributes = {"correlation_id": {"StringValue": "test-correlation-id"}}
+        mock_message.delete = MagicMock()
+
+        # Track call count to stop after first message
+        call_count = [0]
+
+        def mock_receive(*args, **kwargs):
+            call_count[0] += 1
+            if call_count[0] == 1:
+                return [mock_message]
+            # Stop the worker after first message
+            self.worker.stop_event.set()
+            return []
+
+        self.worker.viewpoint_request_queue.queue.receive_messages = mock_receive
+
+        # Mock the processing methods
+        self.worker._process_message = MagicMock()
+
+        # Run the worker
+        self.worker.run()
+
+        # Verify message was processed
+        self.worker._process_message.assert_called_once_with(mock_message)
+        mock_context_filter.set_context.assert_called_with({"correlation_id": "test-correlation-id"})
+
+    @patch("aws.osml.tile_server.viewpoint.worker.ThreadingLocalContextFilter")
+    def test_run_handles_client_error(self, mock_context_filter):
+        """Test the run method handles ClientError exceptions."""
+        # Track call count to stop after error
+        call_count = [0]
+
+        def mock_receive(*args, **kwargs):
+            call_count[0] += 1
+            if call_count[0] == 1:
+                raise ClientError({"Error": {"Code": "500", "Message": "Mock Error"}}, "receive_messages")
+            # Stop the worker after error
+            self.worker.stop_event.set()
+            return []
+
+        self.worker.viewpoint_request_queue.queue.receive_messages = mock_receive
+
+        # Mock logger
+        mock_logger = MagicMock()
+        self.worker.logger = mock_logger
+
+        # Run the worker
+        self.worker.run()
+
+        # Verify error was logged
+        self.assertTrue(mock_logger.error.called)
+
+    @patch("aws.osml.tile_server.viewpoint.worker.ThreadingLocalContextFilter")
+    def test_run_handles_key_error(self, mock_context_filter):
+        """Test the run method handles KeyError exceptions."""
+        # Create a mock message with missing attributes
+        mock_message = MagicMock()
+        mock_message.body = '{"invalid": "data"}'
+        mock_message.message_attributes = {}
+
+        # Mock the queue to return message then stop
+        call_count = [0]
+
+        def mock_receive(*args, **kwargs):
+            call_count[0] += 1
+            if call_count[0] == 1:
+                return [mock_message]
+            self.worker.stop_event.set()
+            return []
+
+        self.worker.viewpoint_request_queue.queue.receive_messages = mock_receive
+
+        # Mock logger
+        mock_logger = MagicMock()
+        self.worker.logger = mock_logger
+
+        # Run the worker
+        self.worker.run()
+
+        # Verify error was logged
+        self.assertTrue(mock_logger.error.called)
+
+    @patch("aws.osml.tile_server.viewpoint.worker.ThreadingLocalContextFilter")
+    def test_run_handles_generic_exception(self, mock_context_filter):
+        """Test the run method handles generic exceptions."""
+        # Mock the queue to raise a generic exception then stop
+        call_count = [0]
+
+        def mock_receive(*args, **kwargs):
+            call_count[0] += 1
+            if call_count[0] == 1:
+                raise ValueError("Unexpected error")
+            self.worker.stop_event.set()
+            return []
+
+        self.worker.viewpoint_request_queue.queue.receive_messages = mock_receive
+
+        # Mock logger
+        mock_logger = MagicMock()
+        self.worker.logger = mock_logger
+
+        # Run the worker
+        self.worker.run()
+
+        # Verify error was logged
+        self.assertTrue(mock_logger.error.called)
+
+    @patch("aws.osml.tile_server.viewpoint.worker.ThreadingLocalContextFilter")
+    def test_run_processes_message_without_correlation_id(self, mock_context_filter):
+        """Test the run method processes messages without correlation_id."""
+        # Create a mock message without correlation_id
+        mock_message = MagicMock()
+        mock_message.body = (
+            '{"viewpoint_id": "1", "viewpoint_name": "mock_name", "viewpoint_status": "REQUESTED", '
+            '"bucket_name": "mock_bucket", "object_key": "mock_object", "tile_size": 512, '
+            '"range_adjustment": "NONE", "local_object_path": null, "error_message": null, "expire_time": null}'
+        )
+        mock_message.message_attributes = {}
+        mock_message.delete = MagicMock()
+
+        # Mock the queue to return one message then stop
+        call_count = [0]
+
+        def mock_receive(*args, **kwargs):
+            call_count[0] += 1
+            if call_count[0] == 1:
+                return [mock_message]
+            self.worker.stop_event.set()
+            return []
+
+        self.worker.viewpoint_request_queue.queue.receive_messages = mock_receive
+
+        # Mock the processing methods
+        self.worker._process_message = MagicMock()
+
+        # Run the worker
+        self.worker.run()
+
+        # Verify message was processed and context was set without correlation_id
+        self.worker._process_message.assert_called_once_with(mock_message)
+        mock_context_filter.set_context.assert_called_with()
 
     def test_download_image_successful(self):
         """Test successful image download."""

@@ -21,14 +21,9 @@ pixels and metadata for imagery stored in the cloud. Key features include:
 ### Package Layout
 
 * **/src**: This is the Python implementation of this application.
-* **/test**: Unit tests have been implemented using [pytest](https://docs.pytest.org).
+* **/test**: Unit and integration tests have been implemented using [pytest](https://docs.pytest.org).
 * **/doc**: Contains Sphinx Doc configuration which is used to generate documentation for this package
-* **/load-test**: Contains sample [Locust](https://locust.io) configuration files which is used to run load test against the Tile Server
-
-### Documentation
-
-* **APIs**: You can find API documentation for the OSML Tile Server hosted on our [GitHub project page](https://aws-solutions-library-samples.github.io/osml-tile-server/). Keep in mind that the `Try it out` button functionality does not work in Github project page.
-  * Alternatively, if you are working from the source code running docker build, you can find the latest API documentation by booting up the Tile Server by visiting http://0.0.0.0:8080/latest/docs or http://0.0.0.0:8080/latest/redoc. With this approach, you can use `Try it out` functionality.
+* **/test-load**: Contains sample [Locust](https://locust.io) configuration files which is used to run load test against the Tile Server
 
 ### Prerequisites
 
@@ -47,9 +42,23 @@ Navigate to the cloned directory using ```cd``` or ```dir```, depending on your 
 
 More information about cloning and managing repositories can be found in the [GitHub Docs](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository).
 
-### Building the Infrastructure
-Tile Server infrastructure is contained in the [associated CDK repository](https://github.com/aws-solutions-library-samples/osml-cdk-constructs),
-and a sample can be deployed by following the instructions in the [Guidance for Overhead Imagery Inference on AWS repository](https://github.com/aws-solutions-library-samples/guidance-for-overhead-imagery-inference-on-aws).
+### Deploying the Infrastructure
+
+The Tile Server now includes complete AWS CDK infrastructure code in the `/cdk` directory. This allows you to deploy the entire application stack to AWS with a single command.
+
+For detailed deployment instructions, configuration options, and integration testing guidance, see the [CDK Deployment Guide](cdk/README.md).
+
+Quick deployment overview:
+1. Navigate to the `cdk` directory
+2. Install dependencies: `npm install`
+3. Configure deployment: Copy `bin/deployment/deployment.json.example` to `bin/deployment/deployment.json` and update with your AWS account details
+4. Build: `npm run build`
+5. Deploy: `cdk deploy --all --require-approval never`
+
+The CDK deployment creates:
+- **Network Stack**: VPC, subnets, security groups, and NAT gateways (or imports existing VPC)
+- **Tile Server Stack**: ECS Fargate service, DynamoDB tables, S3 buckets, SQS queues, and IAM roles
+- **Test Stack** (optional): Integration test infrastructure including Lambda function and test imagery
 
 ### Running Tile Server Locally
 
@@ -61,7 +70,7 @@ using docker compose.
 Configure your [AWS credentials](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)
 for the account in which the Tile Server infrastructure was deployed by setting your environment variables.
 ```
-export AWS_DEFAULT_REGION=<region where TS infrastructure deployed in>
+export AWS_DEFAULT_REGION=<region where TS infrastructure deployed>
 export AWS_ACCESS_KEY_ID=<AKIAIOSFODNN7EXAMPLE>
 export AWS_SECRET_ACCESS_KEY=<wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY>
 ```
@@ -109,9 +118,25 @@ Additionally, you can view the API in the browser and execute various API calls 
 http://0.0.0.0:8080/latest/docs or http://0.0.0.0:8080/latest/redoc
 ```
 
+### Integration Testing
+
+The Tile Server includes comprehensive integration testing infrastructure that validates the deployed service end-to-end. Integration tests verify that all components work together correctly, including:
+
+- Image upload and processing
+- Viewpoint creation and management
+- Tile generation and retrieval
+- API endpoint functionality
+
+For detailed information on running integration tests against your deployed infrastructure, see the [Integration Testing section](cdk/README.md#integration-testing) in the CDK Deployment Guide.
+
+Quick integration test overview:
+1. Deploy the infrastructure with integration tests enabled (see [CDK Deployment Guide](cdk/README.md))
+2. Run the integration test script: `bash scripts/tile_server_integ.sh`
+3. Review test results and logs
+
 ## Support & Feedback
 
-To post feedback, submit feature ideas, or report bugs, please use the [Issues](https://github.com/aws-solutions-library-samples/osml-tile-server/issues) section of this GitHub repo.
+To post feedback, submit feature ideas, or report bugs, please use the [Issues](https://github.com/awslabs/osml-tile-server/issues) section of this GitHub repo.
 
 If you are interested in contributing to OversightML Model Runner, see the [CONTRIBUTING](CONTRIBUTING.md) guide.
 

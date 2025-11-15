@@ -1,4 +1,4 @@
-#  Copyright 2023-2024 Amazon.com, Inc. or its affiliates.
+#  Copyright 2023-2025 Amazon.com, Inc. or its affiliates.
 
 from unittest import TestCase
 from unittest.mock import MagicMock, PropertyMock
@@ -6,7 +6,6 @@ from unittest.mock import MagicMock, PropertyMock
 import boto3
 import pytest
 from botocore.exceptions import ClientError
-from fastapi import HTTPException
 from moto import mock_aws
 from test_config import TestConfig
 
@@ -178,7 +177,7 @@ class TestViewpointStatusTable(TestCase):
         viewpoint_status_table.get_all_viewpoints = MagicMock(
             side_effect=ClientError({"Error": {"Code": 500, "Message": "Mock Error"}}, "scan")
         )
-        with pytest.raises(HTTPException):
+        with pytest.raises(ClientError):
             viewpoint_status_table.get_viewpoints()
 
     def test_get_viewpoints_key_error(self):
@@ -191,7 +190,7 @@ class TestViewpointStatusTable(TestCase):
             viewpoint_status_table.create_viewpoint(viewpoint)
 
         viewpoint_status_table.get_all_viewpoints = MagicMock(side_effect=KeyError())
-        with pytest.raises(HTTPException):
+        with pytest.raises(KeyError):
             viewpoint_status_table.get_viewpoints()
 
     def test_get_viewpoints_other_exception(self):
@@ -204,7 +203,7 @@ class TestViewpointStatusTable(TestCase):
             viewpoint_status_table.create_viewpoint(viewpoint)
 
         viewpoint_status_table.get_all_viewpoints = MagicMock(side_effect=ValueError())
-        with pytest.raises(HTTPException):
+        with pytest.raises(ValueError):
             viewpoint_status_table.get_viewpoints()
 
     def test_get_all_viewpoints(self):
@@ -275,7 +274,7 @@ class TestViewpointStatusTable(TestCase):
         mock_table.get_item.side_effect = ClientError({"Error": {"Code": 500, "Message": "Mock Error"}}, "get_item")
         viewpoint_status_table.table = mock_table
 
-        with pytest.raises(HTTPException):
+        with pytest.raises(ClientError):
             viewpoint_status_table.get_viewpoint("1")
 
     def test_get_viewpoint_key_error(self):
@@ -285,7 +284,7 @@ class TestViewpointStatusTable(TestCase):
         viewpoint_status_table = ViewpointStatusTable(self.ddb)
         viewpoint_status_table.create_viewpoint(MOCK_VIEWPOINT_1)
 
-        with pytest.raises(HTTPException):
+        with pytest.raises(KeyError):
             viewpoint_status_table.get_viewpoint("123")
 
     def test_get_viewpoint_other_exception(self):
@@ -299,7 +298,7 @@ class TestViewpointStatusTable(TestCase):
         mock_table.get_item.side_effect = ValueError()
         viewpoint_status_table.table = mock_table
 
-        with pytest.raises(HTTPException):
+        with pytest.raises(ValueError):
             viewpoint_status_table.get_viewpoint("1")
 
     def test_create_viewpoint(self):
@@ -333,7 +332,7 @@ class TestViewpointStatusTable(TestCase):
         mock_table.put_item.side_effect = ClientError({"Error": {"Code": 500, "Message": "Mock Error"}}, "put_item")
         viewpoint_status_table.table = mock_table
 
-        with pytest.raises(HTTPException):
+        with pytest.raises(ClientError):
             viewpoint_status_table.create_viewpoint(MOCK_VIEWPOINT_1)
 
     def test_update_viewpoint(self):
@@ -384,7 +383,7 @@ class TestViewpointStatusTable(TestCase):
         mock_table.update_item.side_effect = ClientError({"Error": {"Code": 500, "Message": "Mock Error"}}, "update_item")
         viewpoint_status_table.table = mock_table
 
-        with pytest.raises(HTTPException):
+        with pytest.raises(ClientError):
             viewpoint_status_table.update_viewpoint(updated_viewpoint)
 
     def test_update_viewpoint_other_exception(self):
@@ -411,7 +410,7 @@ class TestViewpointStatusTable(TestCase):
         mock_table.update_item.side_effect = ValueError()
         viewpoint_status_table.table = mock_table
 
-        with pytest.raises(HTTPException):
+        with pytest.raises(ValueError):
             viewpoint_status_table.update_viewpoint(updated_viewpoint)
 
     def test_update_params(self):
@@ -439,7 +438,7 @@ class TestViewpointStatusTable(TestCase):
         viewpoint_status_table.delete_viewpoint(MOCK_VIEWPOINT_1.viewpoint_id)
 
         # Try to retrieve the deleted viewpoint
-        with pytest.raises(HTTPException):
+        with pytest.raises(KeyError):
             viewpoint_status_table.get_viewpoint(MOCK_VIEWPOINT_1.viewpoint_id)
 
     def test_delete_viewpoint_client_error(self):
@@ -452,7 +451,7 @@ class TestViewpointStatusTable(TestCase):
         mock_table.delete_item.side_effect = ClientError({"Error": {"Code": 500, "Message": "Mock Error"}}, "delete_item")
         viewpoint_status_table.table = mock_table
 
-        with pytest.raises(HTTPException):
+        with pytest.raises(ClientError):
             viewpoint_status_table.delete_viewpoint(MOCK_VIEWPOINT_1.viewpoint_id)
 
     def test_delete_viewpoint_other_exception(self):
@@ -465,5 +464,5 @@ class TestViewpointStatusTable(TestCase):
         mock_table.delete_item.side_effect = ValueError()
         viewpoint_status_table.table = mock_table
 
-        with pytest.raises(HTTPException):
+        with pytest.raises(ValueError):
             viewpoint_status_table.delete_viewpoint(MOCK_VIEWPOINT_1.viewpoint_id)

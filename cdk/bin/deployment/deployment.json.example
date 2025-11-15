@@ -1,0 +1,8 @@
+{
+  "projectName": "<YOUR-PROJECT-NAME>",
+  "account": {
+    "id": "<YOUR-ACCOUNT-ID>",
+    "region": "<YOUR-REGION>",
+    "prodLike": false
+  }
+}

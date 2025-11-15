@@ -1,4 +1,4 @@
-#  Copyright 2023-2024 Amazon.com, Inc. or its affiliates.
+#  Copyright 2023-2025 Amazon.com, Inc. or its affiliates.
 
 from enum import auto
 from typing import List, Optional
@@ -7,6 +7,22 @@ from pydantic import BaseModel, Field
 
 from aws.osml.gdal import RangeAdjustmentType
 from aws.osml.tile_server.utils.string_enums import AutoLowerStringEnum, AutoUnderscoreStringEnum
+
+
+class ViewpointNotFoundError(Exception):
+    """
+    Viewpoint is deleted/not found
+    """
+
+    pass
+
+
+class ViewpointNotReadyError(Exception):
+    """
+    Viewpoint still processing - HTTP 409/503 (retry later)
+    """
+
+    pass
 
 
 class ViewpointApiNames(str, AutoLowerStringEnum):
@@ -140,10 +156,10 @@ def validate_viewpoint_status(current_status: ViewpointStatus, api_operation: Vi
     :raises: ValueError if the viewpoint is DELETED or REQUESTED.
     """
     if current_status == ViewpointStatus.DELETED:
-        raise ValueError(
-            f"Cannot view {api_operation} for this image since this has already been deleted.",
+        raise ViewpointNotFoundError(
+            f"Cannot view {api_operation} for this viewpoint since it has been deleted.",
         )
     elif current_status == ViewpointStatus.REQUESTED:
-        raise ValueError(
+        raise ViewpointNotReadyError(
             "This viewpoint has been requested and not in READY state. Please try again later.",
         )
