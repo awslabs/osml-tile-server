@@ -21,7 +21,9 @@ import { ApplicationLoadBalancer } from "aws-cdk-lib/aws-elasticloadbalancingv2"
 import { Protocol as elbv2_protocol } from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { IRole } from "aws-cdk-lib/aws-iam";
 import { LogGroup, RetentionDays } from "aws-cdk-lib/aws-logs";
+import { Bucket } from "aws-cdk-lib/aws-s3";
 import { IQueue } from "aws-cdk-lib/aws-sqs";
+import { NagSuppressions } from "cdk-nag";
 import { Construct } from "constructs";
 
 import { OSMLAccount } from "../types";
@@ -198,7 +200,7 @@ export class ECSService extends Construct {
    * @returns The created TaskDefinition
    */
   private createTaskDefinition(props: ECSServiceProps): FargateTaskDefinition {
-    return new FargateTaskDefinition(this, "TSTaskDefinition", {
+    const taskDefinition = new FargateTaskDefinition(this, "TSTaskDefinition", {
       memoryLimitMiB: props.config.ECS_TASK_MEMORY,
       cpu: props.config.ECS_TASK_CPU,
       taskRole: this.ecsRoles.taskRole,
@@ -218,6 +220,21 @@ export class ECSService extends Construct {
         },
       ],
     });
+
+    // Suppress ECS2 - environment variables contain non-sensitive configuration
+    NagSuppressions.addResourceSuppressions(
+      taskDefinition,
+      [
+        {
+          id: "AwsSolutions-ECS2",
+          reason:
+            "Environment variables contain non-sensitive configuration values (AWS region, resource names, endpoints) that do not require AWS Secrets Manager",
+        },
+      ],
+      true,
+    );
+
+    return taskDefinition;
   }
 
   /**
@@ -278,7 +295,27 @@ export class ECSService extends Construct {
    * @returns The created ApplicationLoadBalancer
    */
   private createAlb(props: ECSServiceProps): ApplicationLoadBalancer {
-    return new ApplicationLoadBalancer(
+    // Create S3 bucket for ALB access logs
+    const albLogsBucket = new Bucket(this, "ALBLogsBucket", {
+      removalPolicy: props.removalPolicy,
+      autoDeleteObjects: props.removalPolicy === RemovalPolicy.DESTROY,
+      enforceSSL: true,
+    });
+
+    // Suppress S1 for ALB logs bucket - access logging bucket cannot log to itself
+    NagSuppressions.addResourceSuppressions(
+      albLogsBucket,
+      [
+        {
+          id: "AwsSolutions-S1",
+          reason:
+            "ALB access logs bucket does not require its own access logs to avoid infinite logging loop",
+        },
+      ],
+      true,
+    );
+
+    const alb = new ApplicationLoadBalancer(
       this,
       "TSServiceApplicationLoadBalancer",
       {
@@ -292,6 +329,26 @@ export class ECSService extends Construct {
         internetFacing: false,
       },
     );
+
+    // Enable ALB access logs
+    alb.logAccessLogs(albLogsBucket);
+
+    // Suppress EC23 for internal ALB security group
+    // The ApplicationLoadBalancedFargateService pattern creates a security group
+    // that CDK NAG flags, but the ALB is internal (not internet-facing)
+    NagSuppressions.addResourceSuppressions(
+      alb,
+      [
+        {
+          id: "AwsSolutions-EC23",
+          reason:
+            "Internal ALB security group allows VPC-scoped access. The ALB is not internet-facing (internetFacing: false)",
+        },
+      ],
+      true,
+    );
+
+    return alb;
   }
 
   /**

@@ -2,14 +2,16 @@
  * Copyright 2024-2025 Amazon.com, Inc. or its affiliates.
  */
 
-import { App, Stack } from "aws-cdk-lib";
-import { Template } from "aws-cdk-lib/assertions";
+import { App, Aspects, Stack } from "aws-cdk-lib";
+import { Annotations, Match, Template } from "aws-cdk-lib/assertions";
+import { AwsSolutionsChecks } from "cdk-nag";
 
 import {
   Network,
   NetworkConfig,
 } from "../../../lib/constructs/tile-server/network";
 import { testAccount } from "../../test-account";
+import { generateNagReport } from "../../test-utils";
 
 describe("NetworkConfig", () => {
   describe("constructor", () => {
@@ -700,5 +702,52 @@ describe("Network", () => {
         "tile-server-security-group",
       );
     });
+  });
+});
+
+describe("cdk-nag Compliance Checks - Network", () => {
+  let app: App;
+  let stack: Stack;
+
+  beforeAll(() => {
+    app = new App();
+    stack = new Stack(app, "TestStack", {
+      env: { account: testAccount.id, region: testAccount.region },
+    });
+
+    new Network(stack, "TestNetwork", {
+      account: testAccount,
+      containerPort: 8080,
+    });
+
+    // Add the cdk-nag AwsSolutions Pack with extra verbose logging enabled.
+    Aspects.of(stack).add(new AwsSolutionsChecks({ verbose: true }));
+
+    const errors = Annotations.fromStack(stack).findError(
+      "*",
+      Match.stringLikeRegexp("AwsSolutions-.*"),
+    );
+    const warnings = Annotations.fromStack(stack).findWarning(
+      "*",
+      Match.stringLikeRegexp("AwsSolutions-.*"),
+    );
+
+    generateNagReport(stack, errors, warnings);
+  });
+
+  test("No unsuppressed Warnings", () => {
+    const warnings = Annotations.fromStack(stack).findWarning(
+      "*",
+      Match.stringLikeRegexp("AwsSolutions-.*"),
+    );
+    expect(warnings).toHaveLength(0);
+  });
+
+  test("No unsuppressed Errors", () => {
+    const errors = Annotations.fromStack(stack).findError(
+      "*",
+      Match.stringLikeRegexp("AwsSolutions-.*"),
+    );
+    expect(errors).toHaveLength(0);
   });
 });

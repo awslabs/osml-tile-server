@@ -2,9 +2,10 @@
  * Copyright 2024-2025 Amazon.com, Inc. or its affiliates.
  */
 
-import { App, Stack } from "aws-cdk-lib";
-import { Template } from "aws-cdk-lib/assertions";
+import { App, Aspects, Stack } from "aws-cdk-lib";
+import { Annotations, Match, Template } from "aws-cdk-lib/assertions";
 import { Role } from "aws-cdk-lib/aws-iam";
+import { AwsSolutionsChecks } from "cdk-nag";
 
 import { ECSRoles } from "../../../lib/constructs/tile-server/ecs-roles";
 import { testAccount, testAdcAccount } from "../../test-account";
@@ -13,6 +14,7 @@ import {
   IAMManagedPolicyProperties,
   IAMPolicyStatement,
 } from "../../test-types";
+import { generateNagReport } from "../../test-utils";
 
 describe("ECSRoles", () => {
   let app: App;
@@ -109,7 +111,7 @@ describe("ECSRoles", () => {
       ).toBeGreaterThan(0);
     });
 
-    it("creates task role managed policy with comprehensive permissions", () => {
+    it("creates task role managed policy with necessary permissions", () => {
       new ECSRoles(stack, "TestECSRoles", {
         account: testAccount,
         taskRoleName: "TestTaskRole",
@@ -123,7 +125,7 @@ describe("ECSRoles", () => {
         ManagedPolicyName: "TileServerEcsTaskPolicy",
       });
 
-      // Find the policy and verify it has comprehensive statements
+      // Find the policy and verify it has necessary statements
       const policies = template.findResources("AWS::IAM::ManagedPolicy");
       const taskPolicy = Object.values(policies).find(
         (policy: unknown) =>
@@ -138,7 +140,9 @@ describe("ECSRoles", () => {
       const policyProps =
         taskPolicy.Properties as unknown as IAMManagedPolicyProperties;
       expect(policyProps.PolicyDocument.Statement).toBeDefined();
-      expect(policyProps.PolicyDocument.Statement.length).toBeGreaterThan(5); // Should have multiple statements
+      expect(
+        policyProps.PolicyDocument.Statement.length,
+      ).toBeGreaterThanOrEqual(4); // S3, KMS, STS, CloudWatch
     });
   });
 
@@ -160,7 +164,7 @@ describe("ECSRoles", () => {
       });
     });
 
-    it("creates execution role managed policy with ECR and CloudWatch permissions", () => {
+    it("creates execution role managed policy with ECR permissions", () => {
       new ECSRoles(stack, "TestECSRoles", {
         account: testAccount,
         taskRoleName: "TestTaskRole",
@@ -196,7 +200,6 @@ describe("ECSRoles", () => {
       );
       expect(allActions).toContain("ecr:GetAuthorizationToken");
       expect(allActions).toContain("ecr:BatchGetImage");
-      expect(allActions).toContain("logs:CreateLogGroup");
     });
   });
 
@@ -322,7 +325,7 @@ describe("ECSRoles", () => {
   });
 
   describe("security permissions", () => {
-    it("includes all required service permissions in task role", () => {
+    it("includes necessary service permissions in task role", () => {
       new ECSRoles(stack, "TestECSRoles", {
         account: testAccount,
         taskRoleName: "TestTaskRole",
@@ -331,7 +334,7 @@ describe("ECSRoles", () => {
 
       const template = Template.fromStack(stack);
 
-      // Verify task policy exists and has comprehensive statements
+      // Verify task policy exists and has necessary statements
       const policies = template.findResources("AWS::IAM::ManagedPolicy");
       const taskPolicy = Object.values(policies).find(
         (policy: unknown) =>
@@ -347,7 +350,7 @@ describe("ECSRoles", () => {
         taskPolicy.Properties as unknown as IAMManagedPolicyProperties;
       const statements = taskPolicyProps.PolicyDocument.Statement;
       expect(statements).toBeDefined();
-      expect(statements.length).toBeGreaterThan(5); // Multiple service permissions
+      expect(statements.length).toBeGreaterThanOrEqual(4); // S3, KMS, STS, CloudWatch
 
       // Verify key actions are present somewhere in the policy
       const allActions = statements.flatMap(
@@ -355,7 +358,7 @@ describe("ECSRoles", () => {
       );
       expect(allActions).toContain("sts:AssumeRole");
       expect(allActions).toContain("s3:GetObject");
-      expect(allActions).toContain("dynamodb:PutItem");
+      expect(allActions).toContain("cloudwatch:DescribeAlarms");
     });
 
     it("includes required ECR permissions in execution role", () => {
@@ -390,7 +393,6 @@ describe("ECSRoles", () => {
       );
       expect(allActions).toContain("ecr:GetAuthorizationToken");
       expect(allActions).toContain("ecr:BatchGetImage");
-      expect(allActions).toContain("logs:CreateLogGroup");
     });
   });
 
@@ -468,5 +470,53 @@ describe("ECSRoles", () => {
         ),
       ).toBe(true);
     });
+  });
+});
+
+describe("cdk-nag Compliance Checks - ECSRoles", () => {
+  let app: App;
+  let stack: Stack;
+
+  beforeAll(() => {
+    app = new App();
+    stack = new Stack(app, "TestStack", {
+      env: { account: testAccount.id, region: testAccount.region },
+    });
+
+    new ECSRoles(stack, "TestECSRoles", {
+      account: testAccount,
+      taskRoleName: "TestTaskRole",
+      executionRoleName: "TestExecutionRole",
+    });
+
+    // Add the cdk-nag AwsSolutions Pack with extra verbose logging enabled.
+    Aspects.of(stack).add(new AwsSolutionsChecks({ verbose: true }));
+
+    const errors = Annotations.fromStack(stack).findError(
+      "*",
+      Match.stringLikeRegexp("AwsSolutions-.*"),
+    );
+    const warnings = Annotations.fromStack(stack).findWarning(
+      "*",
+      Match.stringLikeRegexp("AwsSolutions-.*"),
+    );
+
+    generateNagReport(stack, errors, warnings);
+  });
+
+  test("No unsuppressed Warnings", () => {
+    const warnings = Annotations.fromStack(stack).findWarning(
+      "*",
+      Match.stringLikeRegexp("AwsSolutions-.*"),
+    );
+    expect(warnings).toHaveLength(0);
+  });
+
+  test("No unsuppressed Errors", () => {
+    const errors = Annotations.fromStack(stack).findError(
+      "*",
+      Match.stringLikeRegexp("AwsSolutions-.*"),
+    );
+    expect(errors).toHaveLength(0);
   });
 });

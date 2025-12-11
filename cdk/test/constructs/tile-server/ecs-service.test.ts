@@ -2,16 +2,22 @@
  * Copyright 2024-2025 Amazon.com, Inc. or its affiliates.
  */
 
-import { App, RemovalPolicy, Stack } from "aws-cdk-lib";
-import { Template } from "aws-cdk-lib/assertions";
+import { App, Aspects, RemovalPolicy, Stack } from "aws-cdk-lib";
+import { Annotations, Match, Template } from "aws-cdk-lib/assertions";
 import { AttributeType, Table } from "aws-cdk-lib/aws-dynamodb";
 import { SecurityGroup, Vpc } from "aws-cdk-lib/aws-ec2";
 import { AccessPoint, FileSystem } from "aws-cdk-lib/aws-efs";
 import { Queue } from "aws-cdk-lib/aws-sqs";
+import { AwsSolutionsChecks } from "cdk-nag";
 
+import { DatabaseTables } from "../../../lib/constructs/tile-server/database";
 import { DataplaneConfig } from "../../../lib/constructs/tile-server/dataplane";
 import { ECSService } from "../../../lib/constructs/tile-server/ecs-service";
+import { Messaging } from "../../../lib/constructs/tile-server/messaging";
+import { Network } from "../../../lib/constructs/tile-server/network";
+import { Storage } from "../../../lib/constructs/tile-server/storage";
 import { testAccount, testProdAccount } from "../../test-account";
+import { generateNagReport } from "../../test-utils";
 
 describe("ECSService", () => {
   let app: App;
@@ -789,8 +795,90 @@ describe("ECSService", () => {
       // Should create log group
       template.resourceCountIs("AWS::Logs::LogGroup", 1);
 
-      // Should create IAM roles (task + execution)
-      template.resourceCountIs("AWS::IAM::Role", 2);
+      // Should create IAM roles (task + execution + S3 bucket role for ALB logs)
+      template.resourceCountIs("AWS::IAM::Role", 3);
+
+      // Should create S3 bucket for ALB access logs
+      template.resourceCountIs("AWS::S3::Bucket", 1);
     });
+  });
+});
+
+describe("cdk-nag Compliance Checks - ECSService", () => {
+  let app: App;
+  let stack: Stack;
+
+  beforeAll(() => {
+    app = new App();
+    stack = new Stack(app, "TestStack", {
+      env: { account: testAccount.id, region: testAccount.region },
+    });
+
+    const config = new DataplaneConfig();
+
+    // Use proper constructs for compliance testing
+    const network = new Network(stack, "TestNetwork", {
+      account: testAccount,
+    });
+
+    const databaseTables = new DatabaseTables(stack, "TestDatabaseTables", {
+      account: testAccount,
+      config: config,
+      removalPolicy: RemovalPolicy.DESTROY,
+    });
+
+    const messaging = new Messaging(stack, "TestMessaging", {
+      account: testAccount,
+      config: config,
+    });
+
+    const storage = new Storage(stack, "TestStorage", {
+      account: testAccount,
+      vpc: network.vpc,
+      config: config,
+      removalPolicy: RemovalPolicy.DESTROY,
+    });
+
+    new ECSService(stack, "TestECSService", {
+      account: testAccount,
+      vpc: network.vpc,
+      config: config,
+      removalPolicy: RemovalPolicy.DESTROY,
+      regionalS3Endpoint: "s3.us-west-2.amazonaws.com",
+      jobTable: databaseTables.jobTable,
+      jobQueue: messaging.jobQueue,
+      fileSystem: storage.fileSystem,
+      accessPoint: storage.accessPoint,
+    });
+
+    // Add the cdk-nag AwsSolutions Pack with extra verbose logging enabled.
+    Aspects.of(stack).add(new AwsSolutionsChecks({ verbose: true }));
+
+    const errors = Annotations.fromStack(stack).findError(
+      "*",
+      Match.stringLikeRegexp("AwsSolutions-.*"),
+    );
+    const warnings = Annotations.fromStack(stack).findWarning(
+      "*",
+      Match.stringLikeRegexp("AwsSolutions-.*"),
+    );
+
+    generateNagReport(stack, errors, warnings);
+  });
+
+  test("No unsuppressed Warnings", () => {
+    const warnings = Annotations.fromStack(stack).findWarning(
+      "*",
+      Match.stringLikeRegexp("AwsSolutions-.*"),
+    );
+    expect(warnings).toHaveLength(0);
+  });
+
+  test("No unsuppressed Errors", () => {
+    const errors = Annotations.fromStack(stack).findError(
+      "*",
+      Match.stringLikeRegexp("AwsSolutions-.*"),
+    );
+    expect(errors).toHaveLength(0);
   });
 });

@@ -2,13 +2,16 @@
  * Copyright 2024-2025 Amazon.com, Inc. or its affiliates.
  */
 
-import { App, RemovalPolicy, Stack } from "aws-cdk-lib";
-import { Template } from "aws-cdk-lib/assertions";
+import { App, Aspects, RemovalPolicy, Stack } from "aws-cdk-lib";
+import { Annotations, Match, Template } from "aws-cdk-lib/assertions";
 import { SecurityGroup, Vpc } from "aws-cdk-lib/aws-ec2";
+import { AwsSolutionsChecks } from "cdk-nag";
 
 import { DataplaneConfig } from "../../../lib/constructs/tile-server/dataplane";
+import { Network } from "../../../lib/constructs/tile-server/network";
 import { Storage } from "../../../lib/constructs/tile-server/storage";
 import { testAccount, testProdAccount } from "../../test-account";
+import { generateNagReport } from "../../test-utils";
 
 describe("Storage", () => {
   let app: App;
@@ -447,5 +450,61 @@ describe("Storage", () => {
       const mountTargets = template.findResources("AWS::EFS::MountTarget");
       expect(Object.keys(mountTargets).length).toBeGreaterThan(0);
     });
+  });
+});
+
+describe("cdk-nag Compliance Checks - Storage", () => {
+  let app: App;
+  let stack: Stack;
+
+  beforeAll(() => {
+    app = new App();
+    stack = new Stack(app, "TestStack", {
+      env: { account: testAccount.id, region: testAccount.region },
+    });
+
+    const config = new DataplaneConfig();
+
+    // Use Network construct instead of raw VPC for compliance
+    const network = new Network(stack, "TestNetwork", {
+      account: testAccount,
+    });
+
+    new Storage(stack, "TestStorage", {
+      account: testAccount,
+      vpc: network.vpc,
+      config: config,
+      removalPolicy: RemovalPolicy.DESTROY,
+    });
+
+    // Add the cdk-nag AwsSolutions Pack with extra verbose logging enabled.
+    Aspects.of(stack).add(new AwsSolutionsChecks({ verbose: true }));
+
+    const errors = Annotations.fromStack(stack).findError(
+      "*",
+      Match.stringLikeRegexp("AwsSolutions-.*"),
+    );
+    const warnings = Annotations.fromStack(stack).findWarning(
+      "*",
+      Match.stringLikeRegexp("AwsSolutions-.*"),
+    );
+
+    generateNagReport(stack, errors, warnings);
+  });
+
+  test("No unsuppressed Warnings", () => {
+    const warnings = Annotations.fromStack(stack).findWarning(
+      "*",
+      Match.stringLikeRegexp("AwsSolutions-.*"),
+    );
+    expect(warnings).toHaveLength(0);
+  });
+
+  test("No unsuppressed Errors", () => {
+    const errors = Annotations.fromStack(stack).findError(
+      "*",
+      Match.stringLikeRegexp("AwsSolutions-.*"),
+    );
+    expect(errors).toHaveLength(0);
   });
 });

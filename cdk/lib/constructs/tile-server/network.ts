@@ -2,7 +2,10 @@
  * Copyright 2023-2025 Amazon.com, Inc. or its affiliates.
  */
 
+import { RemovalPolicy } from "aws-cdk-lib";
 import {
+  FlowLogDestination,
+  FlowLogTrafficType,
   ISecurityGroup,
   IVpc,
   Peer,
@@ -13,6 +16,8 @@ import {
   SubnetType,
   Vpc,
 } from "aws-cdk-lib/aws-ec2";
+import { LogGroup, RetentionDays } from "aws-cdk-lib/aws-logs";
+import { NagSuppressions } from "cdk-nag";
 import { Construct } from "constructs";
 
 import { OSMLAccount } from "../types";
@@ -173,7 +178,7 @@ export class Network extends Construct {
       const regionConfig = RegionalConfig.getConfig(props.account.region);
 
       // Create new VPC
-      return new Vpc(this, "VPC", {
+      const vpc = new Vpc(this, "VPC", {
         vpcName: this.config.VPC_NAME,
         maxAzs: this.config.MAX_AZS ?? regionConfig.maxVpcAzs,
         subnetConfiguration: [
@@ -189,6 +194,24 @@ export class Network extends Construct {
           },
         ],
       });
+
+      // Add VPC Flow Logs for compliance (required by AwsSolutions-VPC7)
+      const flowLogGroup = new LogGroup(this, "VPCFlowLogGroup", {
+        logGroupName: `/aws/vpc/flowlogs/${this.config.VPC_NAME}`,
+        retention: props.account.prodLike
+          ? RetentionDays.ONE_YEAR
+          : RetentionDays.ONE_WEEK,
+        removalPolicy: props.account.prodLike
+          ? RemovalPolicy.RETAIN
+          : RemovalPolicy.DESTROY,
+      });
+
+      vpc.addFlowLog("VPCFlowLog", {
+        destination: FlowLogDestination.toCloudWatchLogs(flowLogGroup),
+        trafficType: FlowLogTrafficType.ALL,
+      });
+
+      return vpc;
     }
   }
 
@@ -231,6 +254,21 @@ export class Network extends Construct {
           `Allow ALB to reach container on port ${this.containerPort}`,
         );
       }
+
+      // Suppress CDK NAG validation failure for security group CIDR check
+      // The security group uses vpc.vpcCidrBlock which is a CloudFormation token
+      // CDK NAG cannot validate tokens at synth time, but the actual CIDR is scoped to the VPC
+      NagSuppressions.addResourceSuppressions(
+        sg,
+        [
+          {
+            id: "CdkNagValidationFailure",
+            reason:
+              "Security group ingress rules use vpc.vpcCidrBlock which resolves to a CloudFormation intrinsic function at synth time. CDK NAG cannot validate tokens. The actual CIDR is scoped to the VPC CIDR block (e.g., 10.0.0.0/16), not 0.0.0.0/0",
+          },
+        ],
+        true,
+      );
 
       return sg;
     }

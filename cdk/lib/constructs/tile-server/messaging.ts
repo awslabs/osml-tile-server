@@ -3,6 +3,7 @@
  */
 
 import { Duration, RemovalPolicy } from "aws-cdk-lib";
+import { AnyPrincipal, Effect, PolicyStatement } from "aws-cdk-lib/aws-iam";
 import { Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 
@@ -59,7 +60,23 @@ export class Messaging extends Construct {
       retentionPeriod: Duration.days(14),
     });
 
-    return new Queue(this, "TSJobQueue", {
+    // Add policy to enforce SSL for DLQ
+    this.jobDlQueue.addToResourcePolicy(
+      new PolicyStatement({
+        sid: "EnforceSSLRequestsOnly",
+        effect: Effect.DENY,
+        principals: [new AnyPrincipal()],
+        actions: ["sqs:*"],
+        resources: [this.jobDlQueue.queueArn],
+        conditions: {
+          Bool: {
+            "aws:SecureTransport": "false",
+          },
+        },
+      }),
+    );
+
+    const jobQueue = new Queue(this, "TSJobQueue", {
       queueName: props.config.SQS_JOB_QUEUE,
       visibilityTimeout: Duration.seconds(300),
       retentionPeriod: Duration.days(14),
@@ -69,5 +86,23 @@ export class Messaging extends Construct {
         queue: this.jobDlQueue,
       },
     });
+
+    // Add policy to enforce SSL for main queue
+    jobQueue.addToResourcePolicy(
+      new PolicyStatement({
+        sid: "EnforceSSLRequestsOnly",
+        effect: Effect.DENY,
+        principals: [new AnyPrincipal()],
+        actions: ["sqs:*"],
+        resources: [jobQueue.queueArn],
+        conditions: {
+          Bool: {
+            "aws:SecureTransport": "false",
+          },
+        },
+      }),
+    );
+
+    return jobQueue;
   }
 }

@@ -2,8 +2,9 @@
  * Copyright 2024-2025 Amazon.com, Inc. or its affiliates.
  */
 
-import { App, RemovalPolicy, Stack } from "aws-cdk-lib";
-import { Template } from "aws-cdk-lib/assertions";
+import { App, Aspects, RemovalPolicy, Stack } from "aws-cdk-lib";
+import { Annotations, Match, Template } from "aws-cdk-lib/assertions";
+import { AwsSolutionsChecks } from "cdk-nag";
 
 import { DatabaseTables } from "../../../lib/constructs/tile-server/database";
 import { DataplaneConfig } from "../../../lib/constructs/tile-server/dataplane";
@@ -12,6 +13,7 @@ import {
   testAdcAccount,
   testProdAccount,
 } from "../../test-account";
+import { generateNagReport } from "../../test-utils";
 
 describe("DatabaseTables", () => {
   let app: App;
@@ -341,5 +343,54 @@ describe("DatabaseTables", () => {
         DeletionPolicy: "Delete",
       });
     });
+  });
+});
+
+describe("cdk-nag Compliance Checks - DatabaseTables", () => {
+  let app: App;
+  let stack: Stack;
+
+  beforeAll(() => {
+    app = new App();
+    stack = new Stack(app, "TestStack", {
+      env: { account: testAccount.id, region: testAccount.region },
+    });
+
+    const config = new DataplaneConfig();
+    new DatabaseTables(stack, "TestDatabaseTables", {
+      account: testAccount,
+      config: config,
+      removalPolicy: RemovalPolicy.DESTROY,
+    });
+
+    // Add the cdk-nag AwsSolutions Pack with extra verbose logging enabled.
+    Aspects.of(stack).add(new AwsSolutionsChecks({ verbose: true }));
+
+    const errors = Annotations.fromStack(stack).findError(
+      "*",
+      Match.stringLikeRegexp("AwsSolutions-.*"),
+    );
+    const warnings = Annotations.fromStack(stack).findWarning(
+      "*",
+      Match.stringLikeRegexp("AwsSolutions-.*"),
+    );
+
+    generateNagReport(stack, errors, warnings);
+  });
+
+  test("No unsuppressed Warnings", () => {
+    const warnings = Annotations.fromStack(stack).findWarning(
+      "*",
+      Match.stringLikeRegexp("AwsSolutions-.*"),
+    );
+    expect(warnings).toHaveLength(0);
+  });
+
+  test("No unsuppressed Errors", () => {
+    const errors = Annotations.fromStack(stack).findError(
+      "*",
+      Match.stringLikeRegexp("AwsSolutions-.*"),
+    );
+    expect(errors).toHaveLength(0);
   });
 });
