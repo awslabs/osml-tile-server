@@ -234,9 +234,7 @@ class ViewpointWorker(Thread):
 
         :return: None.
         """
-        viewpoint_item.expire_time = viewpoint_item.expire_time = int(
-            (datetime.now(UTC) + timedelta(days=36500)).timestamp()
-        )
+        viewpoint_item.expire_time = int((datetime.now(UTC) + timedelta(days=36500)).timestamp())
         viewpoint_item.viewpoint_status = ViewpointStatus.READY
         self.viewpoint_database.update_viewpoint(viewpoint_item)
 

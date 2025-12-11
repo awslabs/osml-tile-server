@@ -216,8 +216,11 @@ class ViewpointStatusTable:
         update_attr = dict()
 
         for key, val in body.items():
-            if key != "viewpoint_id":
+            if key != "viewpoint_id" and val is not None:
                 update_expr.append(f" {key} = :{key},")
                 update_attr[f":{key}"] = val
 
-        return "".join(update_expr)[:-1], update_attr
+        # Remove trailing comma and return. If no fields to update, return empty string
+        if len(update_expr) > 1:
+            return "".join(update_expr)[:-1], update_attr
+        return "", update_attr
