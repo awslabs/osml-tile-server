@@ -47,3 +47,7 @@ doc/autoapi/
 
 # Config
 cdk/bin/deployment/deployment.json
+
+# CDK-NAG generated reports
+cdk/cdk-nag-suppressions-report.txt
+cdk/.cdk-nag-suppressions-temp.json

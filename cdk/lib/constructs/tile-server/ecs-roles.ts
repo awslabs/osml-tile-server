@@ -13,6 +13,7 @@ import {
   Role,
   ServicePrincipal,
 } from "aws-cdk-lib/aws-iam";
+import { NagSuppressions } from "cdk-nag";
 import { Construct } from "constructs";
 
 import { OSMLAccount } from "../types";
@@ -100,14 +101,14 @@ export class ECSRoles extends Construct {
       managedPolicyName: "TileServerEcsTaskPolicy",
     });
 
-    // Add permissions to assume roles
+    // Add permissions to assume roles for cross-account S3 access
     const stsPolicyStatement = new PolicyStatement({
       effect: Effect.ALLOW,
       actions: ["sts:AssumeRole"],
       resources: ["*"],
     });
 
-    // S3 permissions
+    // S3 permissions - wildcard needed for user-provided imagery buckets
     const s3PolicyStatement = new PolicyStatement({
       effect: Effect.ALLOW,
       actions: [
@@ -121,7 +122,7 @@ export class ECSRoles extends Construct {
       resources: [`arn:${this.partition}:s3:::*`],
     });
 
-    // Add permissions for AWS Key Management Service (KMS)
+    // KMS permissions - wildcard needed for encrypted S3 objects with various keys
     const kmsPolicyStatement = new PolicyStatement({
       effect: Effect.ALLOW,
       actions: ["kms:Decrypt", "kms:GenerateDataKey", "kms:Encrypt"],
@@ -130,97 +131,39 @@ export class ECSRoles extends Construct {
       ],
     });
 
-    // Add permissions for SQS permissions
-    const sqsPolicyStatement = new PolicyStatement({
-      effect: Effect.ALLOW,
-      actions: [
-        "sqs:DeleteMessage",
-        "sqs:ListQueues",
-        "sqs:GetQueueUrl",
-        "sqs:ReceiveMessage",
-        "sqs:SendMessage",
-        "sqs:GetQueueAttributes",
-      ],
-      resources: [
-        `arn:${this.partition}:sqs:${props.account.region}:${props.account.id}:*`,
-      ],
-    });
-
-    // Add permissions for dynamodb permissions
-    const ddbPolicyStatement = new PolicyStatement({
-      effect: Effect.ALLOW,
-      actions: [
-        "dynamodb:BatchGetItem",
-        "dynamodb:BatchWriteItem",
-        "dynamodb:PutItem",
-        "dynamodb:ListTables",
-        "dynamodb:DeleteItem",
-        "dynamodb:GetItem",
-        "dynamodb:Query",
-        "dynamodb:Scan",
-        "dynamodb:UpdateItem",
-        "dynamodb:UpdateTable",
-        "dynamodb:DescribeTable",
-      ],
-      resources: [
-        `arn:${this.partition}:dynamodb:${props.account.region}:${props.account.id}:*`,
-      ],
-    });
-
-    // Add permission for autoscaling ECS permissions
-    const autoScalingEcsPolicyStatement = new PolicyStatement({
-      effect: Effect.ALLOW,
-      actions: ["ecs:DescribeServices", "ecs:UpdateService"],
-      resources: [
-        `arn:${this.partition}:ecs:${props.account.region}:${props.account.id}:*`,
-      ],
-    });
-
-    // Add permission for CW ECS permissions
-    const cwPolicyStatement = new PolicyStatement({
-      effect: Effect.ALLOW,
-      actions: [
-        "logs:PutLogEvents",
-        "logs:GetLogEvents",
-        "logs:DescribeLogStreams",
-        "logs:DescribeLogGroups",
-        "logs:CreateLogStream",
-        "logs:CreateLogGroup",
-      ],
-      resources: [
-        `arn:${this.partition}:logs:${props.account.region}:${props.account.id}:log-group:*`,
-      ],
-    });
-
-    // Add permission for autoscaling CW permissions
+    // CloudWatch DescribeAlarms for autoscaling - account-level operation
     const autoScalingCwPolicyStatement = new PolicyStatement({
       effect: Effect.ALLOW,
       actions: ["cloudwatch:DescribeAlarms"],
       resources: [`*`],
     });
 
-    // Add permissions for AWS Events
-    const eventsPolicyStatement = new PolicyStatement({
-      effect: Effect.ALLOW,
-      actions: ["events:PutRule", "events:PutTargets", "events:DescribeRule"],
-      resources: [
-        `arn:${this.partition}:events:${props.account.region}:${props.account.id}:*`,
-      ],
-    });
-
     taskPolicy.addStatements(
       stsPolicyStatement,
       s3PolicyStatement,
       kmsPolicyStatement,
-      sqsPolicyStatement,
-      ddbPolicyStatement,
-      autoScalingEcsPolicyStatement,
       autoScalingCwPolicyStatement,
-      cwPolicyStatement,
-      eventsPolicyStatement,
     );
 
     taskRole.addManagedPolicy(taskPolicy);
+
+    // Add NAG suppressions for necessary wildcard permissions
+    NagSuppressions.addResourceSuppressions(
+      taskPolicy,
+      [
+        {
+          id: "AwsSolutions-IAM5",
+          reason:
+            "Wildcard permissions required: (1) S3 access to user-provided imagery buckets with arbitrary names, (2) KMS decryption for S3 objects encrypted with various customer-managed keys, (3) STS AssumeRole for cross-account S3 access patterns, (4) CloudWatch DescribeAlarms is an account-level operation for autoscaling",
+          appliesTo: [
+            "Resource::*",
+            `Resource::arn:${this.partition}:s3:::*`,
+            `Resource::arn:${this.partition}:kms:${props.account.region}:${props.account.id}:key/*`,
+          ],
+        },
+      ],
+      true,
+    );
 
     return taskRole;
   }
@@ -245,14 +188,14 @@ export class ECSRoles extends Construct {
       managedPolicyName: "TileServerExecutionPolicy",
     });
 
-    // Add permissions for ECR permissions
+    // ECR GetAuthorizationToken - account-level operation, requires wildcard
     const ecrAuthPolicyStatement = new PolicyStatement({
       effect: Effect.ALLOW,
       actions: ["ecr:GetAuthorizationToken"],
       resources: ["*"],
     });
 
-    // Add permissions for ECR permissions
+    // ECR repository access - wildcard needed for various container registries
     const ecrPolicyStatement = new PolicyStatement({
       effect: Effect.ALLOW,
       actions: [
@@ -266,29 +209,26 @@ export class ECSRoles extends Construct {
       ],
     });
 
-    // Add permissions for cloudwatch permissions
-    const cwPolicyStatement = new PolicyStatement({
-      effect: Effect.ALLOW,
-      actions: [
-        "logs:PutLogEvents",
-        "logs:GetLogEvents",
-        "logs:DescribeLogStreams",
-        "logs:DescribeLogGroups",
-        "logs:CreateLogStream",
-        "logs:CreateLogGroup",
-      ],
-      resources: [
-        `arn:${this.partition}:logs:${props.account.region}:${props.account.id}:*`,
-      ],
-    });
-
-    tsPolicy.addStatements(
-      ecrAuthPolicyStatement,
-      ecrPolicyStatement,
-      cwPolicyStatement,
-    );
+    tsPolicy.addStatements(ecrAuthPolicyStatement, ecrPolicyStatement);
 
     executionRole.addManagedPolicy(tsPolicy);
+
+    // Add NAG suppressions for necessary wildcard permissions
+    NagSuppressions.addResourceSuppressions(
+      tsPolicy,
+      [
+        {
+          id: "AwsSolutions-IAM5",
+          reason:
+            "Wildcard permissions required: (1) ECR GetAuthorizationToken is an account-level operation, (2) ECR repository access needed for pulling images from various repositories",
+          appliesTo: [
+            "Resource::*",
+            `Resource::arn:${this.partition}:ecr:${props.account.region}:${props.account.id}:repository/*`,
+          ],
+        },
+      ],
+      true,
+    );
 
     return executionRole;
   }

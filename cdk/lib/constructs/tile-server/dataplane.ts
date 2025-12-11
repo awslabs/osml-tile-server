@@ -5,6 +5,7 @@
 import { RemovalPolicy } from "aws-cdk-lib";
 import { ISecurityGroup, IVpc, SecurityGroup } from "aws-cdk-lib/aws-ec2";
 import { IRole, Role } from "aws-cdk-lib/aws-iam";
+import { NagSuppressions } from "cdk-nag";
 import { Construct } from "constructs";
 
 import { BaseConfig, ConfigType, OSMLAccount, RegionalConfig } from "../types";
@@ -318,10 +319,44 @@ export class Dataplane extends Construct {
     this.storage = this.createStorage(props);
     this.ecsService = this.createEcsService(props);
 
-    // Allow access to EFS from Fargate ECS
-    this.storage.fileSystem.grantRootAccess(
-      this.ecsService.fargateService.taskDefinition.taskRole,
+    // Grant specific resource permissions to task role
+    this.grantResourcePermissions();
+  }
+
+  /**
+   * Grants specific permissions to the ECS task role for created resources.
+   * This approach scopes IAM permissions to specific resources instead of using wildcards.
+   */
+  private grantResourcePermissions(): void {
+    const taskRole = this.ecsService.fargateService.taskDefinition.taskRole;
+
+    // Grant DynamoDB permissions to specific job table
+    this.databaseTables.jobTable.grantReadWriteData(taskRole);
+
+    // Suppress IAM5 for DynamoDB GSI index wildcard
+    // The grantReadWriteData method includes access to all table indexes
+    // The job table has a GSI (ttl-gsi) that requires this wildcard permission
+    NagSuppressions.addResourceSuppressions(
+      taskRole.node.findChild("DefaultPolicy").node.defaultChild!,
+      [
+        {
+          id: "AwsSolutions-IAM5",
+          reason:
+            "DynamoDB grantReadWriteData includes wildcard access to table indexes. The job table has a Global Secondary Index (ttl-gsi) that requires index access for query operations",
+        },
+      ],
+      true,
     );
+
+    // Grant SQS permissions to specific job queue
+    this.messaging.jobQueue.grantConsumeMessages(taskRole);
+    this.messaging.jobQueue.grantSendMessages(taskRole);
+
+    // Grant CloudWatch Logs permissions to specific log group
+    this.ecsService.logGroup.grantWrite(taskRole);
+
+    // Grant EFS access
+    this.storage.fileSystem.grantRootAccess(taskRole);
 
     // Allow connections to the file system from the ECS cluster
     this.storage.fileSystem.connections.allowDefaultPortFrom(
