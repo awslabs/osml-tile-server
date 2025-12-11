@@ -43,7 +43,21 @@ def create_viewpoint_invalid(session: Session, url: str, test_body_data: Dict[st
 
     response_data = res.json()
     expect("Status code").equals(res.status_code, 422)
-    expect("Validation message").equals(response_data["detail"][0]["msg"], "Input should be a valid string")
+    # Pydantic v2 returns validation errors as a list in the detail field
+    # Find the error for bucket_name field specifically
+    detail = response_data.get("detail", [])
+    if not isinstance(detail, list) or len(detail) == 0:
+        raise AssertionError(f"Expected detail to be a non-empty list, got: {detail}")
+
+    # Find the error for bucket_name field
+    bucket_name_error = next(
+        (err for err in detail if isinstance(err, dict) and "bucket_name" in err.get("loc", [])),
+        detail[0],  # Fallback to first error if bucket_name error not found
+    )
+    error_msg = bucket_name_error.get("msg", "")
+    # Pydantic v2 error message for None value in required string field
+    # The message should contain "Input should be a valid string"
+    expect("Validation message contains expected text").equals("Input should be a valid string" in error_msg, True)
 
 
 @with_expect

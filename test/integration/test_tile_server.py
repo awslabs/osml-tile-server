@@ -101,6 +101,14 @@ class TestTileServer:
         timeout_sec = 300
         elapsed_wait_time = 0
         logging.info("Waiting for viewpoint status to be READY")
+
+        # Ensure viewpoint_id is not None - this can happen if create_viewpoint failed
+        if self.viewpoint_id is None:
+            raise Exception(
+                "Cannot wait for viewpoint to be ready: viewpoint_id is None. "
+                "Previous test (create_viewpoint) likely failed."
+            )
+
         status = "REQUESTED"
         while status == "REQUESTED":
             if elapsed_wait_time > timeout_sec:

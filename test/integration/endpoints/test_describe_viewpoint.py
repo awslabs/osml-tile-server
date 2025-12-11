@@ -21,6 +21,12 @@ def describe_viewpoint(session: Session, url: str, viewpoint_id: str) -> None:
 
     return: None
     """
+    # Ensure viewpoint_id is not None - this can happen if create_viewpoint failed
+    if viewpoint_id is None:
+        raise AssertionError(
+            "Cannot describe viewpoint: viewpoint_id is None. Previous test (create_viewpoint) likely failed."
+        )
+
     res = session.get(f"{url}/{viewpoint_id}")
     res.raise_for_status()
 
