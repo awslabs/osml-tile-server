@@ -1,0 +1,50 @@
+name: Destroy Infrastructure
+
+permissions:
+  id-token: write
+  contents: read
+
+on:
+  workflow_call:
+    inputs:
+      aws_region:
+        required: true
+        type: string
+    secrets:
+      TILE_SERVER_ACCOUNT_ID:
+        required: true
+
+env:
+  AWS_REGION: ${{ inputs.aws_region }}
+  AWS_PAGER: ""
+  NODE_VERSION: '24'
+  PYTHON_VERSION: '3.13'
+
+jobs:
+  destroy-infrastructure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup AWS OIDC
+        uses: ./.github/actions/setup-aws-oidc
+        with:
+          aws_region: ${{ inputs.aws_region }}
+          account_id: ${{ secrets.TILE_SERVER_ACCOUNT_ID }}
+          role_duration_seconds: '14400'
+      - name: Setup CDK
+        uses: ./.github/actions/setup-cdk
+        with:
+          node_version: ${{ env.NODE_VERSION }}
+      - name: Generate deployment.json
+        uses: ./.github/actions/generate-deployment-json
+        with:
+          account_id: ${{ secrets.TILE_SERVER_ACCOUNT_ID }}
+          build_from_source: 'false'
+      - name: Build CDK
+        working-directory: cdk
+        run: npm run build
+      - name: Destroy CDK infrastructure
+        working-directory: cdk
+        run: cdk destroy --all --force
