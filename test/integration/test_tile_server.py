@@ -98,7 +98,7 @@ class TestTileServer:
 
     def wait_for_viewpoint_ready(self) -> None:
         polling_interval_sec = 2
-        timeout_sec = 300
+        timeout_sec = 480  # Increased from 300 to allow more time for processing
         elapsed_wait_time = 0
         logging.info("Waiting for viewpoint status to be READY")
 

@@ -1,0 +1,20 @@
+name: Check Pending Workflows
+
+permissions:
+  contents: read
+  actions: read
+
+on:
+  workflow_call:
+
+jobs:
+  check-pending-workflows:
+    runs-on: ubuntu-latest
+    timeout-minutes: 125  # Slightly more than timeout (7200000ms = 120 minutes)
+    steps:
+      - name: Check for pending workflows
+        uses: ahmadnassri/action-workflow-queue@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          delay: 300000
+          timeout: 7200000

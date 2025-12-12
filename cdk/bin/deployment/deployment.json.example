@@ -4,5 +4,12 @@
     "id": "<YOUR-ACCOUNT-ID>",
     "region": "<YOUR-REGION>",
     "prodLike": false
+  },
+  "deployIntegrationTests": true,
+  "dataplaneConfig": {
+    "BUILD_FROM_SOURCE": true
+  },
+  "testConfig": {
+    "BUILD_FROM_SOURCE": true
   }
 }

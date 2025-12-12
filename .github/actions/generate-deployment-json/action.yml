@@ -1,0 +1,30 @@
+name: 'Generate Deployment JSON'
+description: 'Generate deployment.json from example template'
+inputs:
+  account_id:
+    description: 'AWS account ID'
+    required: true
+  build_from_source:
+    description: 'Whether to build from source'
+    required: false
+    default: 'true'
+runs:
+  using: composite
+  steps:
+    - name: Generate deployment.json
+      working-directory: cdk
+      shell: bash
+      env:
+        ACCOUNT_ID: ${{ inputs.account_id }}
+        BUILD_FROM_SOURCE: ${{ inputs.build_from_source }}
+      run: |
+        python3 << 'EOF'
+        import json
+        import os
+        with open('bin/deployment/deployment.json.example') as f:
+            config = json.load(f)
+        config['account']['id'] = os.environ['ACCOUNT_ID']
+        config['account']['region'] = os.environ.get('AWS_REGION', os.environ.get('REGION', '<YOUR-REGION>'))
+        with open('bin/deployment/deployment.json', 'w') as f:
+            json.dump(config, f, indent=2)
+        EOF
