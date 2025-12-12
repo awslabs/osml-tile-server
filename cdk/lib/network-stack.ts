@@ -48,30 +48,18 @@ export class NetworkStack extends Stack {
 
     // Get the container port from dataplane config
     const containerPort =
-      props.deployment.dataplaneConfig?.ECS_CONTAINER_PORT || 8080;
+      (props.deployment.dataplaneConfig?.ECS_CONTAINER_PORT as
+        | number
+        | undefined) || 8080;
 
-    // If an existing VPC is provided, we don't need to create a new Network construct
-    // Instead, we'll create a minimal Network construct that wraps the existing VPC
-    if (props.vpc) {
-      // For imported VPCs, we'll create a Network construct that uses the existing VPC
-      const networkConfig = new NetworkConfig({
-        VPC_ID: props.vpc.vpcId,
-      });
-      this.network = new Network(this, "Network", {
-        account: props.deployment.account,
-        config: networkConfig,
-        containerPort: containerPort,
-      });
-    } else {
-      // Create new VPC using Network construct
-      const networkConfig = props.deployment.networkConfig
-        ? props.deployment.networkConfig
-        : new NetworkConfig();
-      this.network = new Network(this, "Network", {
-        account: props.deployment.account,
-        config: networkConfig,
-        containerPort: containerPort,
-      });
-    }
+    // Create Network construct using deployment configuration
+    // The Network construct will handle VPC import or creation based on the config
+    const networkConfig = props.deployment.networkConfig ?? new NetworkConfig();
+    this.network = new Network(this, "Network", {
+      account: props.deployment.account,
+      config: networkConfig,
+      containerPort: containerPort,
+      vpc: props.vpc,
+    });
   }
 }

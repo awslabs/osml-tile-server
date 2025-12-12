@@ -1,82 +1,79 @@
 # Copyright 2023-2025 Amazon.com, Inc. or its affiliates.
 
-FROM public.ecr.aws/amazonlinux/amazonlinux:2023-minimal as build
+# Stage 1: Build environment
+FROM public.ecr.aws/amazonlinux/amazonlinux:2023-minimal AS build
 
-# Only override if you're using a mirror with a cert pulled in using cert-base as a build parameter
+# Set up build arguments and environment variables
 ARG BUILD_CERT=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
 ARG PIP_INSTALL_LOCATION=https://pypi.org/simple/
-ARG MINICONDA_VERSION=Miniconda3-latest-Linux-x86_64
-ARG MINICONDA_URL=https://repo.anaconda.com/miniconda/${MINICONDA_VERSION}.sh
+ARG PYTHON_VERSION=3.13.1
 ENV PATH=/opt/conda/bin:$PATH
-ARG CONDA_ENV_NAME="osml_tile_server"
+ENV CONDA_TARGET_ENV=osml_tile_server
 
-# Give sudo permissions
+# Set working directory
+WORKDIR /home
+
+# Install necessary packages
 USER root
+RUN dnf update -y && dnf install -y wget shadow-utils gcc gcc-c++ make && dnf clean all
 
-# Configure, update, and refresh yum environment
-RUN dnf update -y && \
-    dnf install -y wget shadow-utils gcc && \
-    dnf clean all  && \
-    rm -rf /var/cache/dnf
+# Install Miniconda - dynamically detect architecture at build time
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then \
+        MINICONDA_VERSION="Miniconda3-latest-Linux-aarch64"; \
+    else \
+        MINICONDA_VERSION="Miniconda3-latest-Linux-x86_64"; \
+    fi && \
+    MINICONDA_URL="https://repo.anaconda.com/miniconda/${MINICONDA_VERSION}.sh" && \
+    echo "Auto-detected architecture: $ARCH, installing: $MINICONDA_VERSION" && \
+    wget -c ${MINICONDA_URL} && \
+    chmod +x ${MINICONDA_VERSION}.sh && \
+    ./${MINICONDA_VERSION}.sh -b -f -p /opt/conda && \
+    rm ${MINICONDA_VERSION}.sh && \
+    ln -s /opt/conda/etc/profile.d/conda.sh /etc/profile.d/conda.sh
 
-# Install miniconda
-ARG MINICONDA_VERSION=Miniconda3-latest-Linux-x86_64
-ARG MINICONDA_URL=https://repo.anaconda.com/miniconda/${MINICONDA_VERSION}.sh
-RUN wget -c ${MINICONDA_URL} \
-    && chmod +x ${MINICONDA_VERSION}.sh \
-    && ./${MINICONDA_VERSION}.sh -b -f -p /opt/conda \
-    && rm ${MINICONDA_VERSION}.sh \
-    && ln -s /opt/conda/etc/profile.d/conda.sh /etc/profile.d/conda.sh
-
-# Copy conda ENV
-COPY conda/environment.yml .
+# Copy the conda environment file
+COPY conda/tile-server.yml environment.yml
 
 # Accept Conda TOS before creating the environment
 RUN conda config --set always_yes true && \
     conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main && \
     conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
 
-# Install python with conda
-RUN conda env create -n ${CONDA_ENV_NAME} --file environment.yml && \
-    conda clean -afy && \
-    find /opt/conda/ -follow -type f -name '*.a' -delete && \
-    find /opt/conda/ -follow -type f -name '*.pyc' -delete && \
-    find /opt/conda/ -follow -type f -name '*.js.map' -delete && \
-    rm -rf /opt/conda/pkgs
+# Create the conda environment and remove additional unnecessary files
+# Add Python first for Docker containers to ensure upstream dependencies depend on it.
+RUN conda create -n ${CONDA_TARGET_ENV} -c conda-forge python=${PYTHON_VERSION} -y \
+     && conda env update -n ${CONDA_TARGET_ENV} -f environment.yml \
+     && conda clean -afy \
+     && find /opt/conda/ -follow -type f -name '*.a' -delete \
+     && find /opt/conda/ -follow -type f -name '*.pyc' -delete \
+     && find /opt/conda/ -follow -type f -name '*.js.map' -delete
 
 # Copy the application source code
 COPY . osml-tile-server
 
-# Install the model runner application
-RUN . /opt/conda/etc/profile.d/conda.sh && \
-    conda activate ${CONDA_ENV_NAME} && \
-    python3 -m pip install --no-cache-dir osml-tile-server/.
+# Install the tile server application
+RUN conda run -n ${CONDA_TARGET_ENV} python3 -m pip install --no-cache-dir --root-user-action=ignore osml-tile-server/.
 
-FROM public.ecr.aws/amazonlinux/amazonlinux:2023-minimal as tile_server
+# Stage 2: Runtime environment
+FROM public.ecr.aws/amazonlinux/amazonlinux:2023-minimal AS tile_server
 
-# Add conda to the path
+# Set up runtime environment variables
+ENV CONDA_TARGET_ENV=osml_tile_server
 ENV PATH=/opt/conda/bin:$PATH
-ENV PYTHONPATH=/opt/conda/envs/${CONDA_ENV_NAME}/bin
-ENV CONDA_ENV_NAME="osml_tile_server"
+
+# Set working directory
+WORKDIR /home
 
 # Copy the conda environment from the build stage
 COPY --from=build /opt/conda /opt/conda
 RUN ln -s /opt/conda/etc/profile.d/conda.sh /etc/profile.d/conda.sh
 
-# We now replace the image's existing Python with Python from the conda environment:
-RUN BASE_PYTHON_PATH=$(command -v python3) \
-    && CONDA_PYTHON_PATH="/opt/conda/envs/${CONDA_ENV_NAME}/bin/python3" \
-    && if [ ! -f "$CONDA_PYTHON_PATH" ]; then echo "Python not found in conda environment"; exit 1; fi \
-    && rm -rf $BASE_PYTHON_PATH \
-    && ln -sf $CONDA_PYTHON_PATH $BASE_PYTHON_PATH
+# Copy the application from the build stage
+COPY --from=build /home/osml-tile-server /home/osml-tile-server
 
-# Copy the function code to root directory
-ADD . .
-
-# Install the package into the base image
-RUN . /opt/conda/etc/profile.d/conda.sh && \
-    conda activate ${CONDA_ENV_NAME} && \
-    python3 -m pip install --no-cache-dir .
+# Install bash and configure user and permissions
+RUN dnf install -y shadow-utils bash
 
 # Set up a health check at that port
 HEALTHCHECK NONE
@@ -84,7 +81,18 @@ HEALTHCHECK NONE
 # Make sure we expose our ports
 EXPOSE 8080
 
-ENTRYPOINT ["/bin/bash", "-c", "\
-    . /opt/conda/etc/profile.d/conda.sh && \
-    conda activate ${CONDA_ENV_NAME} && \
-    uvicorn --host 0.0.0.0 --port 8080 aws.osml.tile_server.main:app"]
+# Create entrypoint script
+RUN     (echo '#!/bin/bash' \
+    &&   echo '__conda_setup="$(/opt/conda/bin/conda shell.bash hook 2> /dev/null)"' \
+    &&   echo 'eval "$__conda_setup"' \
+    &&   echo 'conda activate "${CONDA_TARGET_ENV:-osml_tile_server}"' \
+    &&   echo 'CONDA_ENV_PATH="/opt/conda/envs/${CONDA_DEFAULT_ENV:-osml_tile_server}"' \
+    &&   echo '# For conda-forge GDAL, drivers are typically built-in, but set GDAL_DRIVER_PATH if plugins exist' \
+    &&   echo 'if [ -d "${CONDA_ENV_PATH}/lib/gdalplugins" ] && [ "$(ls -A ${CONDA_ENV_PATH}/lib/gdalplugins/*.so 2>/dev/null)" ]; then' \
+    &&   echo '  export GDAL_DRIVER_PATH="${CONDA_ENV_PATH}/lib/gdalplugins"' \
+    &&   echo 'fi' \
+    &&   echo 'exec "$@"'\
+        ) > /entry.sh && chmod +x /entry.sh
+
+# Set entry point
+ENTRYPOINT ["/entry.sh", "/bin/bash", "-c", "uvicorn --host 0.0.0.0 --port 8080 aws.osml.tile_server.main:app"]

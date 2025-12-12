@@ -14,7 +14,7 @@ import {
 } from "aws-cdk-lib/aws-iam";
 import { Construct } from "constructs";
 
-import { OSMLAccount } from "../../osml_account";
+import { OSMLAccount } from "../types";
 
 /**
  * Represents the properties required to define a tile server lambda sweeper role.

@@ -3,8 +3,8 @@
  */
 
 import { Duration, RemovalPolicy, SymlinkFollowMode } from "aws-cdk-lib";
-import { ISecurityGroup, IVpc } from "aws-cdk-lib/aws-ec2";
-import { ApplicationLoadBalancedFargateService } from "aws-cdk-lib/aws-ecs-patterns";
+import { ISecurityGroup, IVpc, SubnetType } from "aws-cdk-lib/aws-ec2";
+import { Platform } from "aws-cdk-lib/aws-ecr-assets";
 import { IRole } from "aws-cdk-lib/aws-iam";
 import { DockerImageCode, DockerImageFunction } from "aws-cdk-lib/aws-lambda";
 import { LogGroup, RetentionDays } from "aws-cdk-lib/aws-logs";
@@ -66,7 +66,8 @@ export interface TestProps {
 
   readonly lambdaRole: IRole;
   readonly securityGroup?: ISecurityGroup;
-  readonly fargateService: ApplicationLoadBalancedFargateService;
+  /** The tile server service endpoint DNS name (from Dataplane stack export). */
+  readonly serviceEndpointDnsName: string;
   /** The test configuration. */
   readonly config?: TestConfig;
 }
@@ -107,12 +108,15 @@ export class Test extends Construct {
   private createTestingImage(): DockerImageCode {
     if (this.config.BUILD_FROM_SOURCE) {
       // Build from source using Docker
+      // Specify platform to ensure compatibility with AWS Lambda (requires linux/amd64)
+      // This is especially important when building on Mac (especially Apple Silicon)
       return DockerImageCode.fromImageAsset(
         this.config.TEST_CONTAINER_BUILD_PATH,
         {
           file: this.config.TEST_CONTAINER_DOCKERFILE,
           followSymlinks: SymlinkFollowMode.ALWAYS,
           target: this.config.TEST_CONTAINER_BUILD_TARGET,
+          platform: Platform.LINUX_AMD64,
         },
       );
     } else {
@@ -122,6 +126,7 @@ export class Test extends Construct {
       return DockerImageCode.fromImageAsset(__dirname, {
         file: "Dockerfile.tmp",
         followSymlinks: SymlinkFollowMode.ALWAYS,
+        platform: Platform.LINUX_AMD64,
       });
     }
   }
@@ -136,6 +141,9 @@ export class Test extends Construct {
     const runner = new DockerImageFunction(this, "TSTestRunner", {
       code: this.testImageCode,
       vpc: props.vpc,
+      vpcSubnets: {
+        subnetType: SubnetType.PRIVATE_WITH_EGRESS,
+      },
       role: props.lambdaRole,
       timeout: Duration.minutes(10),
       memorySize: 1024,
@@ -143,7 +151,7 @@ export class Test extends Construct {
       securityGroups: props.securityGroup ? [props.securityGroup] : [],
       logGroup: logGroup,
       environment: {
-        TS_ENDPOINT: `http://${props.fargateService.loadBalancer.loadBalancerDnsName}/latest`,
+        TS_ENDPOINT: `http://${props.serviceEndpointDnsName}/latest`,
       },
     });
     return runner;

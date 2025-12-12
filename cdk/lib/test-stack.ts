@@ -12,7 +12,6 @@
 
 import { Stack, StackProps } from "aws-cdk-lib";
 import { ISecurityGroup, IVpc } from "aws-cdk-lib/aws-ec2";
-import { ApplicationLoadBalancedFargateService } from "aws-cdk-lib/aws-ecs-patterns";
 import { IRole } from "aws-cdk-lib/aws-iam";
 import { Construct } from "constructs";
 
@@ -29,11 +28,11 @@ export interface TestStackProps extends StackProps {
   deployment: DeploymentConfig;
   /** The VPC to use for the test imagery. */
   vpc: IVpc;
-
-  fargateService: ApplicationLoadBalancedFargateService;
-
+  /** The tile server service endpoint DNS name (from Dataplane stack export). */
+  serviceEndpointDnsName: string;
+  /** Optional existing Lambda role to use. */
   existingLambdaRole?: IRole;
-
+  /** Optional security group to use. */
   securityGroup?: ISecurityGroup;
 }
 
@@ -85,7 +84,7 @@ export class TestStack extends Stack {
       vpc: props.vpc,
       lambdaRole: this.role.lambdaRole,
       securityGroup: props.securityGroup,
-      fargateService: props.fargateService,
+      serviceEndpointDnsName: props.serviceEndpointDnsName,
       config: this.deployment.testConfig,
     });
   }
