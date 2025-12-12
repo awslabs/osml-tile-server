@@ -10,7 +10,7 @@ import globals from "globals";
 export default [
   // Global ignores
   {
-    ignores: ["node_modules/**", "cdk.out/**"],
+    ignores: ["node_modules/**", "cdk.out/**", "dist/**"],
   },
 
   js.configs.recommended,

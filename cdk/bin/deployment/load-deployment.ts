@@ -16,8 +16,8 @@ import { join } from "path";
 
 import { TestImageryConfig } from "../../lib/constructs/test/imagery";
 import { TestConfig } from "../../lib/constructs/test/test";
-import { DataplaneConfig } from "../../lib/constructs/tile-server/dataplane";
 import { NetworkConfig } from "../../lib/constructs/tile-server/network";
+import { ConfigType } from "../../lib/constructs/types";
 
 /**
  * Represents the structure of the deployment configuration file.
@@ -40,8 +40,8 @@ export interface DeploymentConfig {
   /** Networking configuration. If VPC_ID is provided, an existing VPC will be imported. Otherwise, a new VPC will be created. */
   networkConfig?: NetworkConfig;
 
-  /** Optional Dataplane configuration. */
-  dataplaneConfig?: DataplaneConfig;
+  /** Optional Dataplane configuration. Can be a partial config object passed to DataplaneConfig constructor. */
+  dataplaneConfig?: Partial<Record<string, unknown>>;
 
   /** Whether to deploy integration test infrastructure (tests and test imagery stacks). */
   deployIntegrationTests?: boolean;
@@ -385,7 +385,9 @@ export function loadDeploymentConfig(): DeploymentConfig {
   // Parse optional Dataplane configuration
   let dataplaneConfig: DeploymentConfig["dataplaneConfig"] = undefined;
   if (config.dataplaneConfig && typeof config.dataplaneConfig === "object") {
-    dataplaneConfig = config.dataplaneConfig as DataplaneConfig;
+    dataplaneConfig = config.dataplaneConfig as Partial<
+      Record<string, unknown>
+    >;
   }
 
   // Parse optional deployIntegrationTests flag
@@ -396,16 +398,27 @@ export function loadDeploymentConfig(): DeploymentConfig {
     true,
   );
 
-  // Parse optional test imagery configuration
+  // Parse optional test imagery configuration (only if deployIntegrationTests is true)
   let testImageryConfig: DeploymentConfig["testImageryConfig"] = undefined;
-  if (config.testConfig && typeof config.testConfig === "object") {
-    testImageryConfig = config.testImageryConfig as TestImageryConfig;
+  if (deployIntegrationTests) {
+    if (
+      config.testImageryConfig &&
+      typeof config.testImageryConfig === "object"
+    ) {
+      // Instantiate TestImageryConfig to ensure proper default merging and type safety
+      testImageryConfig = new TestImageryConfig(
+        config.testImageryConfig as ConfigType,
+      );
+    }
   }
 
-  // Parse optional test configuration
+  // Parse optional test configuration (only if deployIntegrationTests is true)
   let testConfig: DeploymentConfig["testConfig"] = undefined;
-  if (config.testConfig && typeof config.testConfig === "object") {
-    testConfig = config.testConfig as TestConfig;
+  if (deployIntegrationTests) {
+    if (config.testConfig && typeof config.testConfig === "object") {
+      // Instantiate TestConfig to ensure proper default merging and type safety
+      testConfig = new TestConfig(config.testConfig as Partial<ConfigType>);
+    }
   }
 
   const validatedConfig: DeploymentConfig = {

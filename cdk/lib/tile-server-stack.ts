@@ -6,19 +6,19 @@ import { App, Environment, Stack, StackProps } from "aws-cdk-lib";
 import { ISecurityGroup, IVpc } from "aws-cdk-lib/aws-ec2";
 
 import { DeploymentConfig } from "../bin/deployment/load-deployment";
-import { Dataplane } from "./constructs/tile-server/dataplane";
+import { Dataplane, DataplaneConfig } from "./constructs/tile-server/dataplane";
 
 export interface TileServerStackProps extends StackProps {
   readonly env: Environment;
   readonly deployment: DeploymentConfig;
-  readonly vpc: IVpc;
-  readonly securityGroup?: ISecurityGroup;
+  readonly vpc: IVpc; // VPC is now required and provided by NetworkStack
+  readonly securityGroup?: ISecurityGroup; // Security group from NetworkStack
 }
 
 export class TileServerStack extends Stack {
   public resources: Dataplane;
   public vpc: IVpc;
-  public securityGroup?: ISecurityGroup;
+  public readonly loadBalancerDnsName: string;
   private deployment: DeploymentConfig;
 
   /**
@@ -34,16 +34,25 @@ export class TileServerStack extends Stack {
       ...props,
     });
 
+    // Store deployment config for use in other methods
     this.deployment = props.deployment;
-    this.vpc = props.vpc;
-    this.securityGroup = props.securityGroup;
 
-    // Create the tile server application dataplane
-    this.resources = new Dataplane(this, "TileServerDataplane", {
+    // Use the provided VPC from NetworkStack
+    this.vpc = props.vpc;
+
+    // Create the tile server application dataplane using the VPC
+    const dataplaneConfig = props.deployment.dataplaneConfig
+      ? new DataplaneConfig(props.deployment.dataplaneConfig)
+      : undefined;
+    this.resources = new Dataplane(this, "Dataplane", {
       account: this.deployment.account,
       vpc: this.vpc,
-      securityGroup: this.securityGroup,
-      config: this.deployment.dataplaneConfig,
+      securityGroup: props.securityGroup,
+      config: dataplaneConfig,
     });
+
+    // Expose the load balancer DNS name for cross-stack references
+    this.loadBalancerDnsName =
+      this.resources.ecsService.fargateService.loadBalancer.loadBalancerDnsName;
   }
 }

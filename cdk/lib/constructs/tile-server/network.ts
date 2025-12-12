@@ -82,6 +82,8 @@ export interface NetworkProps {
    * group is not provided.
    */
   readonly containerPort?: number;
+  /** Optional existing VPC to use directly instead of creating or looking up one. */
+  readonly vpc?: IVpc;
 }
 
 /**
@@ -161,13 +163,19 @@ export class Network extends Construct {
 
   /**
    * Resolves a VPC based on configuration.
+   * If a VPC is provided directly, uses it.
    * If VPC_ID is provided, imports the existing VPC.
    * Otherwise, creates a new VPC with default settings.
    *
-   * @param props - The network properties
+   * @param props - The NetworkProps containing the VPC or configuration
    * @returns The VPC instance
    */
   private resolveVpc(props: NetworkProps): IVpc {
+    // If VPC is provided directly, use it
+    if (props.vpc) {
+      return props.vpc;
+    }
+
     if (this.config.VPC_ID) {
       // Import existing VPC
       return Vpc.fromLookup(this, "ImportedVPC", {

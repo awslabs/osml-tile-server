@@ -13,7 +13,6 @@
  */
 
 import { App } from "aws-cdk-lib";
-import { IVpc, Vpc } from "aws-cdk-lib/aws-ec2";
 
 import { NetworkStack } from "../lib/network-stack";
 import { TestStack } from "../lib/test-stack";
@@ -37,31 +36,18 @@ const app = new App();
 const deployment = loadDeploymentConfig();
 
 // -----------------------------------------------------------------------------
-// Create VPC (only if importing existing VPC)
-// -----------------------------------------------------------------------------
-
-let vpc: IVpc | undefined;
-if (deployment.networkConfig?.VPC_ID) {
-  // Import existing VPC
-  vpc = Vpc.fromLookup(app, "ImportedVPC", {
-    vpcId: deployment.networkConfig.VPC_ID,
-  });
-}
-
-// -----------------------------------------------------------------------------
 // Deploy the network stack.
 // -----------------------------------------------------------------------------
 
 const networkStack = new NetworkStack(
   app,
-  `${deployment.projectName}-TileServerNetwork`,
+  `${deployment.projectName}-Network`,
   {
     env: {
       account: deployment.account.id,
       region: deployment.account.region,
     },
     deployment: deployment,
-    vpc: vpc,
   },
 );
 
@@ -71,7 +57,7 @@ const networkStack = new NetworkStack(
 
 const tileServerStack = new TileServerStack(
   app,
-  `${deployment.projectName}-TileServer`,
+  `${deployment.projectName}-Dataplane`,
   {
     env: {
       account: deployment.account.id,
@@ -92,18 +78,15 @@ tileServerStack.node.addDependency(networkStack);
 // -----------------------------------------------------------------------------
 
 if (deployment.deployIntegrationTests) {
-  const testStack = new TestStack(
-    app,
-    `${deployment.projectName}-TileServerTest`,
-    {
-      env: {
-        account: deployment.account.id,
-        region: deployment.account.region,
-      },
-      deployment: deployment,
-      vpc: networkStack.network.vpc,
-      fargateService: tileServerStack.resources.ecsService.fargateService,
+  const testStack = new TestStack(app, `${deployment.projectName}-Test`, {
+    env: {
+      account: deployment.account.id,
+      region: deployment.account.region,
     },
-  );
+    deployment: deployment,
+    vpc: networkStack.network.vpc,
+    serviceEndpointDnsName: tileServerStack.loadBalancerDnsName,
+    securityGroup: networkStack.network.securityGroup,
+  });
   testStack.node.addDependency(tileServerStack);
 }

@@ -84,17 +84,60 @@ echo "Payload: {\"image_uri\": \"s3://ts-test-imagery-$ACCOUNT_ID/small.tif\"}"
 echo "Region: $AWS_REGION"
 echo ""
 
-# Invoke the Lambda function with the payload
-if ! log_result=$(aws lambda invoke --region "$AWS_REGION" \
-                                    --function-name "TSTestRunner" \
-                                    --payload fileb://"$TEMP_PAYLOAD" \
-                                    --log-type Tail /dev/null \
-                                    --cli-read-timeout 0 \
-                                    --query 'LogResult' \
-                                    --output text 2>&1); then
-    echo "ERROR: Failed to invoke Lambda function: $log_result"
+# Check if Lambda function exists before invoking
+if ! aws lambda get-function --function-name "TSTestRunner" --region "$AWS_REGION" &>/dev/null; then
+    echo "ERROR: Lambda function 'TSTestRunner' not found in region $AWS_REGION"
+    echo "Please ensure the infrastructure is deployed with 'deployIntegrationTests: true'"
     rm -f "$TEMP_PAYLOAD"
     exit 1
+fi
+
+# Invoke the Lambda function with the payload
+# Set timeout to 12 minutes (Lambda timeout is 10 minutes + buffer)
+# Use gtimeout (macOS with Homebrew coreutils) or timeout (Linux) if available
+# If neither is available, rely on AWS CLI's --cli-read-timeout
+TIMEOUT_CMD=""
+if command -v gtimeout >/dev/null 2>&1; then
+    TIMEOUT_CMD="gtimeout 720"
+elif command -v timeout >/dev/null 2>&1; then
+    TIMEOUT_CMD="timeout 720"
+fi
+
+echo "Waiting for Lambda execution (this may take several minutes for cold starts)..."
+if [ -n "$TIMEOUT_CMD" ]; then
+    # Use timeout command if available
+    if ! log_result=$(${TIMEOUT_CMD} aws lambda invoke --region "$AWS_REGION" \
+                                        --function-name "TSTestRunner" \
+                                        --payload fileb://"$TEMP_PAYLOAD" \
+                                        --log-type Tail /dev/null \
+                                        --cli-read-timeout 720 \
+                                        --query 'LogResult' \
+                                        --output text 2>&1); then
+        echo "ERROR: Failed to invoke Lambda function or timeout exceeded"
+        echo "Last output: $log_result"
+        echo ""
+        echo "To check Lambda logs manually, run:"
+        echo "  aws logs tail /aws/lambda/TSTestRunner --follow --region $AWS_REGION"
+        rm -f "$TEMP_PAYLOAD"
+        exit 1
+    fi
+else
+    # Fallback: use AWS CLI timeout only (works on macOS without coreutils)
+    if ! log_result=$(aws lambda invoke --region "$AWS_REGION" \
+                                        --function-name "TSTestRunner" \
+                                        --payload fileb://"$TEMP_PAYLOAD" \
+                                        --log-type Tail /dev/null \
+                                        --cli-read-timeout 720 \
+                                        --query 'LogResult' \
+                                        --output text 2>&1); then
+        echo "ERROR: Failed to invoke Lambda function"
+        echo "Last output: $log_result"
+        echo ""
+        echo "To check Lambda logs manually, run:"
+        echo "  aws logs tail /aws/lambda/TSTestRunner --follow --region $AWS_REGION"
+        rm -f "$TEMP_PAYLOAD"
+        exit 1
+    fi
 fi
 
 # Decode the log result
