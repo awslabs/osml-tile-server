@@ -175,21 +175,26 @@ To use an existing VPC instead of creating a new one:
   "projectName": "OversightML",
   "account": { "..." },
   "networkConfig": {
-    "vpcId": "vpc-0123456789abcdef0",
-    "targetSubnets": [
+    "VPC_ID": "vpc-0123456789abcdef0",
+    "TARGET_SUBNETS": [
       "subnet-0123456789abcdef0",
       "subnet-0123456789abcdef1"
     ],
-    "securityGroupId": "sg-0123456789abcdef0"
+    "SECURITY_GROUP_ID": "sg-0123456789abcdef0"
   }
 }
 ```
 
 **Network Configuration Fields:**
 
-- `vpcId`: Existing VPC ID to use
-- `targetSubnets`: Array of subnet IDs (required if vpcId is specified)
-- `securityGroupId`: Existing security group ID (optional)
+- `VPC_ID`: Existing VPC ID to use
+- `TARGET_SUBNETS`: Array of subnet IDs (required if VPC_ID is specified)
+- `SECURITY_GROUP_ID`: Existing security group ID (optional)
+- `VPC_NAME`: Name for a new VPC (default: "tile-server-vpc")
+- `SECURITY_GROUP_NAME`: Name for a new security group (default: "tile-server-security-group")
+- `MAX_AZS`: Maximum number of availability zones for the VPC
+
+**Note**: All networkConfig keys must be in UPPERCASE_SNAKE_CASE format.
 
 ##### Dataplane Configuration (Optional)
 
@@ -268,8 +273,8 @@ Enable integration testing infrastructure:
     "isAdc": false
   },
   "networkConfig": {
-    "vpcId": "vpc-0123456789abcdef0",
-    "targetSubnets": ["subnet-0123456789abcdef0", "subnet-0123456789abcdef1"]
+    "VPC_ID": "vpc-0123456789abcdef0",
+    "TARGET_SUBNETS": ["subnet-0123456789abcdef0", "subnet-0123456789abcdef1"]
   },
   "dataplaneConfig": {
     "ECS_TASK_CPU": 4096,
@@ -541,15 +546,15 @@ sudo systemctl start docker
 
 #### 5. VPC Subnet Validation Error
 
-**Error**: `When vpcId is provided, targetSubnets must also be specified`
+**Error**: `When VPC_ID is provided, TARGET_SUBNETS must also be specified`
 
 **Solution**: If specifying a VPC ID, you must also provide subnet IDs:
 
 ```json
 {
   "networkConfig": {
-    "vpcId": "vpc-xxx",
-    "targetSubnets": ["subnet-xxx", "subnet-yyy"]
+    "VPC_ID": "vpc-xxx",
+    "TARGET_SUBNETS": ["subnet-xxx", "subnet-yyy"]
   }
 }
 ```
