@@ -3,7 +3,8 @@
   "account": {
     "id": "<YOUR-ACCOUNT-ID>",
     "region": "<YOUR-REGION>",
-    "prodLike": false
+    "prodLike": false,
+    "isAdc": false
   },
   "deployIntegrationTests": true,
   "dataplaneConfig": {

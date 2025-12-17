@@ -309,76 +309,62 @@ export function loadDeploymentConfig(): DeploymentConfig {
     false,
   );
 
-  // Parse and validate networking configuration
+  // Parse optional Network configuration
   let networkConfig: DeploymentConfig["networkConfig"] = undefined;
-  if (config.networkConfig && typeof config.networkConfig === "object") {
-    // Cast to Record<string, unknown> after validation
-    const networkConfigRaw = config.networkConfig as Record<string, unknown>;
+  if (
+    config.networkConfig &&
+    typeof config.networkConfig === "object" &&
+    config.networkConfig !== null
+  ) {
+    const networkConfigData = config.networkConfig as Record<string, unknown>;
 
-    // Validate VPC ID if provided
-    let vpcId: string | undefined = undefined;
-    if (
-      networkConfigRaw.vpcId !== undefined &&
-      networkConfigRaw.vpcId !== null
-    ) {
-      vpcId = validateVpcId(
-        validateStringField(networkConfigRaw.vpcId, "networkConfig.vpcId"),
+    // Validate VPC_ID format if provided
+    if (networkConfigData.VPC_ID !== undefined) {
+      validateVpcId(
+        validateStringField(networkConfigData.VPC_ID, "networkConfig.VPC_ID"),
       );
     }
 
-    // Validate target subnets if provided
-    let targetSubnets: string[] | undefined = undefined;
-    if (
-      networkConfigRaw.targetSubnets !== undefined &&
-      networkConfigRaw.targetSubnets !== null
-    ) {
-      if (!Array.isArray(networkConfigRaw.targetSubnets)) {
+    // Validate TARGET_SUBNETS is an array if provided
+    if (networkConfigData.TARGET_SUBNETS !== undefined) {
+      if (!Array.isArray(networkConfigData.TARGET_SUBNETS)) {
         throw new DeploymentConfigError(
-          "Field 'networkConfig.targetSubnets' must be an array",
-          "networkConfig.targetSubnets",
+          "Field 'networkConfig.TARGET_SUBNETS' must be an array",
+          "networkConfig.TARGET_SUBNETS",
         );
       }
-
-      targetSubnets = networkConfigRaw.targetSubnets.map(
-        (subnetId: unknown, index: number) =>
-          validateSubnetId(
-            validateStringField(
-              subnetId,
-              `networkConfig.targetSubnets[${index}]`,
-            ),
-          ),
-      );
+      // Validate each subnet ID format
+      for (const subnetId of networkConfigData.TARGET_SUBNETS) {
+        validateSubnetId(
+          validateStringField(subnetId, "networkConfig.TARGET_SUBNETS[]"),
+        );
+      }
     }
 
-    // Validate security group ID if provided
-    let securityGroupId: string | undefined = undefined;
-    if (
-      networkConfigRaw.securityGroupId !== undefined &&
-      networkConfigRaw.securityGroupId !== null
-    ) {
-      securityGroupId = validateSecurityGroupId(
+    // Validate SECURITY_GROUP_ID format if provided
+    if (networkConfigData.SECURITY_GROUP_ID !== undefined) {
+      validateSecurityGroupId(
         validateStringField(
-          networkConfigRaw.securityGroupId,
-          "networkConfig.securityGroupId",
+          networkConfigData.SECURITY_GROUP_ID,
+          "networkConfig.SECURITY_GROUP_ID",
         ),
       );
     }
 
     // Validate that TARGET_SUBNETS is required when VPC_ID is provided
-    if (vpcId && (!targetSubnets || targetSubnets.length === 0)) {
+    if (
+      networkConfigData.VPC_ID &&
+      (!networkConfigData.TARGET_SUBNETS ||
+        !Array.isArray(networkConfigData.TARGET_SUBNETS) ||
+        networkConfigData.TARGET_SUBNETS.length === 0)
+    ) {
       throw new DeploymentConfigError(
-        "When vpcId is provided, targetSubnets must also be specified with at least one subnet ID",
-        "networkConfig.targetSubnets",
+        "When VPC_ID is provided, TARGET_SUBNETS must also be specified with at least one subnet ID",
+        "networkConfig.TARGET_SUBNETS",
       );
     }
 
-    // Create the network config data object
-    const networkConfigData: Record<string, unknown> = {};
-    if (vpcId) networkConfigData.VPC_ID = vpcId;
-    if (targetSubnets) networkConfigData.TARGET_SUBNETS = targetSubnets;
-    if (securityGroupId) networkConfigData.SECURITY_GROUP_ID = securityGroupId;
-
-    // Create NetworkConfig instance
+    // Create NetworkConfig instance with all properties passed through
     networkConfig = new NetworkConfig(networkConfigData);
   }
 
