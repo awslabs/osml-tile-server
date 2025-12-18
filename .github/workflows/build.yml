@@ -18,6 +18,3 @@ jobs:
   pre-commit:
     uses: ./.github/workflows/pre-commit.yml
     secrets: inherit
-  docker:
-    uses: ./.github/workflows/docker.yml
-    secrets: inherit
