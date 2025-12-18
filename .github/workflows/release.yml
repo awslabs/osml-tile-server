@@ -16,7 +16,3 @@ jobs:
     needs: [tox]
     uses: ./.github/workflows/pypi.yml
     secrets: inherit
-  docker:
-    needs: [tox]
-    uses: ./.github/workflows/docker.yml
-    secrets: inherit
