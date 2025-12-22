@@ -103,11 +103,8 @@ app = VersionedFastAPI(
         "url": "https://github.com/awslabs/osml-tile-server/issues",
     },
     license_info={
-        "license": """Copyright Amazon Web Services, Inc. or its affiliates. All Rights Reserved.
-        This AWS Content is provided subject to the terms of the AWS Customer Agreement
-        available at https://aws.amazon.com/agreement or other written agreement between
-        Customer and either Amazon Web Services, Inc. or Amazon Web Services EMEA SARL or both.""",
-        "name": "Amazon Web Services",
+        "name": "Apache-2.0",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0",
     },
     lifespan=lifespan,
     root_path=ServerConfig.api_root_path,
@@ -144,7 +141,7 @@ async def root() -> str:
                 please cut an issue ticket <a href="{app.contact["url"]}">in our github project</a>.</p>
             <p><a href="{ServerConfig.api_root_path}/latest/docs">Swagger</a></p>
             <p><a href="{ServerConfig.api_root_path}/latest/redoc">ReDoc</a></p>
-            <p>The license of this product: {app.license_info["license"]}</p>
+            <p>The license of this product: <a href="{app.license_info["url"]}">{app.license_info["name"]}</a></p>
         </body>
     </html>
     """
