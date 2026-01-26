@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 Amazon.com, Inc. or its affiliates.
+ * Copyright 2023-2026 Amazon.com, Inc. or its affiliates.
  */
 
 import { RemovalPolicy } from "aws-cdk-lib";
@@ -9,12 +9,12 @@ import {
   Bucket,
   BucketAccessControl,
   BucketEncryption,
-  ObjectOwnership,
+  ObjectOwnership
 } from "aws-cdk-lib/aws-s3";
 import {
   BucketDeployment,
   ServerSideEncryption,
-  Source,
+  Source
 } from "aws-cdk-lib/aws-s3-deployment";
 import { Construct } from "constructs";
 
@@ -44,7 +44,7 @@ export class TestImageryConfig extends BaseConfig {
     super({
       S3_IMAGE_BUCKET_PREFIX: "ts-test-imagery",
       S3_TEST_IMAGES_PATH: "../test/data/integ/",
-      ...config,
+      ...config
     });
   }
 }
@@ -132,7 +132,7 @@ export class TestImagery extends Construct {
       removalPolicy: this.removalPolicy,
       objectOwnership: ObjectOwnership.OBJECT_WRITER,
       versioned: props.account.prodLike,
-      accessControl: BucketAccessControl.BUCKET_OWNER_FULL_CONTROL,
+      accessControl: BucketAccessControl.BUCKET_OWNER_FULL_CONTROL
     });
 
     // Deploy test images into the bucket
@@ -144,7 +144,7 @@ export class TestImagery extends Construct {
       useEfs: true,
       vpc: props.vpc,
       retainOnDelete: props.account.prodLike,
-      serverSideEncryption: ServerSideEncryption.AES_256,
+      serverSideEncryption: ServerSideEncryption.AES_256
     });
   }
 }

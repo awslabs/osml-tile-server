@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Amazon.com, Inc. or its affiliates.
+ * Copyright 2025-2026 Amazon.com, Inc. or its affiliates.
  */
 
 /**
@@ -67,16 +67,16 @@ export class TestStack extends Stack {
         id: props.deployment.account.id,
         region: props.deployment.account.region,
         prodLike: props.deployment.account.prodLike,
-        isAdc: props.deployment.account.isAdc,
+        isAdc: props.deployment.account.isAdc
       },
       vpc: props.vpc,
-      config: this.deployment.testImageryConfig,
+      config: this.deployment.testImageryConfig
     });
 
     this.role = new LambdaRole(this, "TSLambdaRole", {
       account: props.deployment.account,
       roleName: "TSLambdaRole",
-      existingLambdaRole: props.existingLambdaRole,
+      existingLambdaRole: props.existingLambdaRole
     });
 
     this.test = new Test(this, "TSIntegTest", {
@@ -85,7 +85,7 @@ export class TestStack extends Stack {
       lambdaRole: this.role.lambdaRole,
       securityGroup: props.securityGroup,
       serviceEndpointDnsName: props.serviceEndpointDnsName,
-      config: this.deployment.testConfig,
+      config: this.deployment.testConfig
     });
   }
 }

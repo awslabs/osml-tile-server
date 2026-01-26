@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Amazon.com, Inc. or its affiliates.
+ * Copyright 2025-2026 Amazon.com, Inc. or its affiliates.
  */
 
 /**
@@ -22,7 +22,7 @@ import { DeploymentConfig } from "../bin/deployment/load-deployment";
  * @returns A test deployment configuration
  */
 export function createTestDeploymentConfig(
-  overrides?: Partial<DeploymentConfig>,
+  overrides?: Partial<DeploymentConfig>
 ): DeploymentConfig {
   return {
     projectName: "test-project",
@@ -31,11 +31,11 @@ export function createTestDeploymentConfig(
       region: "us-west-2",
       prodLike: false,
       isAdc: false,
-      ...overrides?.account,
+      ...overrides?.account
     },
     networkConfig: overrides?.networkConfig,
     dataplaneConfig: overrides?.dataplaneConfig,
-    deployIntegrationTests: overrides?.deployIntegrationTests ?? false,
+    deployIntegrationTests: overrides?.deployIntegrationTests ?? false
   };
 }
 
@@ -55,12 +55,12 @@ export function createTestApp(): App {
  * @returns A test environment configuration
  */
 export function createTestEnvironment(
-  overrides?: Partial<Environment>,
+  overrides?: Partial<Environment>
 ): Environment {
   return {
     account: "123456789012",
     region: "us-west-2",
-    ...overrides,
+    ...overrides
   };
 }
 
@@ -73,7 +73,7 @@ export function createTestEnvironment(
  */
 export function createTestVpc(stack: Stack, id: string = "TestVpc"): Vpc {
   return new Vpc(stack, id, {
-    maxAzs: 2,
+    maxAzs: 2
   });
 }
 
@@ -131,7 +131,7 @@ interface CdkTemplate {
  * @returns Array of suppressed violations
  */
 export function extractSuppressedViolations(
-  stack: Stack,
+  stack: Stack
 ): SuppressedNagViolation[] {
   const template = Template.fromStack(stack);
   const templateJson = template.toJSON() as CdkTemplate;
@@ -156,7 +156,7 @@ export function extractSuppressedViolations(
           resource: resourceId,
           reason: suppression.reason || "",
           appliesTo: suppression.applies_to,
-          stackName: stack.stackName,
+          stackName: stack.stackName
         });
       }
     }
@@ -173,7 +173,7 @@ export function extractSuppressedViolations(
  */
 export function writeSuppressedViolationsReport(
   stacks: Stack[],
-  outputPath?: string,
+  outputPath?: string
 ): void {
   const reportPath =
     outputPath || join(process.cwd(), "cdk-nag-suppressions-report.txt");
@@ -196,7 +196,7 @@ export function writeSuppressedViolationsReport(
   const reportContent = lines.join("\n");
   writeFileSync(reportPath, reportContent, "utf-8");
   process.stdout.write(
-    `\nSuppressed violations report written to: ${reportPath}\n`,
+    `\nSuppressed violations report written to: ${reportPath}\n`
   );
 }
 
@@ -210,7 +210,7 @@ export function writeSuppressedViolationsReport(
 export function generateNagReport(
   stack: Stack,
   errors: SynthesisMessage[],
-  warnings: SynthesisMessage[],
+  warnings: SynthesisMessage[]
 ): void {
   const formatFindings = (findings: SynthesisMessage[]): NagFinding[] => {
     const regex = /(AwsSolutions-[A-Za-z0-9]+)\[([^\]]+)]:\s*(.+)/;
@@ -224,13 +224,13 @@ export function generateNagReport(
         return {
           rule: "",
           resource: "",
-          details: "",
+          details: ""
         };
       }
       return {
         rule: match[1],
         resource: match[2],
-        details: match[3],
+        details: match[3]
       };
     });
   };
@@ -244,7 +244,7 @@ export function generateNagReport(
 
   // Generate the report
   process.stdout.write(
-    "\n================== CDK-NAG Compliance Report ==================\n",
+    "\n================== CDK-NAG Compliance Report ==================\n"
   );
   process.stdout.write(`Stack: ${stack.stackName}\n`);
   process.stdout.write(`Generated: ${new Date().toISOString()}\n`);
@@ -273,7 +273,7 @@ export function generateNagReport(
 
   if (suppressedViolations.length > 0) {
     process.stdout.write(
-      "\n=============== Suppressed Violations ===============\n",
+      "\n=============== Suppressed Violations ===============\n"
     );
     suppressedViolations.forEach((violation) => {
       process.stdout.write(`\nResource: ${violation.resource}\n`);
@@ -292,7 +292,7 @@ export function generateNagReport(
  */
 const TEMP_SUPPRESSIONS_FILE = join(
   process.cwd(),
-  ".cdk-nag-suppressions-temp.json",
+  ".cdk-nag-suppressions-temp.json"
 );
 
 /**
@@ -334,7 +334,7 @@ function readTempSuppressionsFile(): Map<string, SuppressedNagViolation[]> {
  * @param data - Map of stack names to their suppressed violations
  */
 function writeTempSuppressionsFile(
-  data: Map<string, SuppressedNagViolation[]>,
+  data: Map<string, SuppressedNagViolation[]>
 ): void {
   try {
     const jsonContent = JSON.stringify(Object.fromEntries(data), null, 2);
@@ -354,7 +354,7 @@ function writeTempSuppressionsFile(
  */
 function appendStackSuppressionsToReport(
   stack: Stack,
-  violations: SuppressedNagViolation[],
+  violations: SuppressedNagViolation[]
 ): void {
   const stackName = stack.stackName;
   if (!globalSuppressedViolations.has(stackName)) {
@@ -378,7 +378,7 @@ function appendStackSuppressionsToReport(
  * @returns Map of rule names to their violations
  */
 function groupViolationsByRule(
-  violations: SuppressedNagViolation[],
+  violations: SuppressedNagViolation[]
 ): Map<string, SuppressedNagViolation[]> {
   const grouped = new Map<string, SuppressedNagViolation[]>();
   for (const violation of violations) {
@@ -397,7 +397,7 @@ function groupViolationsByRule(
  * @returns Array of report content lines
  */
 function generateReportLines(
-  violationsByStack: Map<string, SuppressedNagViolation[]>,
+  violationsByStack: Map<string, SuppressedNagViolation[]>
 ): string[] {
   const allViolations: SuppressedNagViolation[] = [];
   for (const violations of violationsByStack.values()) {
@@ -424,7 +424,7 @@ function generateReportLines(
   lines.push("Summary by Rule");
   lines.push("=".repeat(REPORT_SEPARATOR_WIDTH));
   const sortedRules = Array.from(violationsByRule.entries()).sort(
-    (a, b) => b[1] - a[1],
+    (a, b) => b[1] - a[1]
   );
   for (const [rule, count] of sortedRules) {
     lines.push(`${rule}: ${count} suppression(s)`);
@@ -433,7 +433,7 @@ function generateReportLines(
 
   // Detailed report by stack
   for (const [stackName, violations] of Array.from(
-    violationsByStack.entries(),
+    violationsByStack.entries()
   ).sort()) {
     lines.push("=".repeat(REPORT_SEPARATOR_WIDTH));
     lines.push(`Stack: ${stackName}`);
@@ -444,7 +444,7 @@ function generateReportLines(
     const violationsByRuleInStack = groupViolationsByRule(violations);
 
     for (const [rule, ruleViolations] of Array.from(
-      violationsByRuleInStack.entries(),
+      violationsByRuleInStack.entries()
     ).sort()) {
       lines.push(`Rule: ${rule}`);
       lines.push(`  Count: ${ruleViolations.length}`);
@@ -485,7 +485,7 @@ function cleanupTempSuppressionsFile(): void {
  * @param outputPath - Optional path to the output file
  */
 export function generateFinalSuppressedViolationsReport(
-  outputPath?: string,
+  outputPath?: string
 ): void {
   // Try to load from temporary file first (for cross-process aggregation)
   const tempData = readTempSuppressionsFile();
@@ -514,7 +514,7 @@ export function generateFinalSuppressedViolationsReport(
   const reportContent = lines.join("\n");
   writeFileSync(reportPath, reportContent, "utf-8");
   process.stdout.write(
-    `\nSuppressed violations report written to: ${reportPath}\n`,
+    `\nSuppressed violations report written to: ${reportPath}\n`
   );
 
   // Clean up temp file after successful report generation

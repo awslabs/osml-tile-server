@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 Amazon.com, Inc. or its affiliates.
+ * Copyright 2024-2026 Amazon.com, Inc. or its affiliates.
  */
 
 import { App, Aspects, RemovalPolicy, Stack } from "aws-cdk-lib";
@@ -11,7 +11,7 @@ import { DataplaneConfig } from "../../../lib/constructs/tile-server/dataplane";
 import {
   testAccount,
   testAdcAccount,
-  testProdAccount,
+  testProdAccount
 } from "../../test-account";
 import { generateNagReport } from "../../test-utils";
 
@@ -23,7 +23,7 @@ describe("DatabaseTables", () => {
   beforeEach(() => {
     app = new App();
     stack = new Stack(app, "TestStack", {
-      env: { account: testAccount.id, region: testAccount.region },
+      env: { account: testAccount.id, region: testAccount.region }
     });
     config = new DataplaneConfig();
   });
@@ -33,7 +33,7 @@ describe("DatabaseTables", () => {
       const databaseTables = new DatabaseTables(stack, "TestDatabaseTables", {
         account: testAccount,
         config: config,
-        removalPolicy: RemovalPolicy.DESTROY,
+        removalPolicy: RemovalPolicy.DESTROY
       });
 
       expect(databaseTables.jobTable).toBeDefined();
@@ -42,13 +42,13 @@ describe("DatabaseTables", () => {
     it("creates database tables with custom configuration", () => {
       const customConfig = new DataplaneConfig({
         DDB_JOB_TABLE: "CustomJobTable",
-        DDB_TTL_ATTRIBUTE: "custom_ttl",
+        DDB_TTL_ATTRIBUTE: "custom_ttl"
       });
 
       const databaseTables = new DatabaseTables(stack, "TestDatabaseTables", {
         account: testAccount,
         config: customConfig,
-        removalPolicy: RemovalPolicy.DESTROY,
+        removalPolicy: RemovalPolicy.DESTROY
       });
 
       expect(databaseTables.jobTable).toBeDefined();
@@ -60,7 +60,7 @@ describe("DatabaseTables", () => {
       new DatabaseTables(stack, "TestDatabaseTables", {
         account: testAccount,
         config: config,
-        removalPolicy: RemovalPolicy.DESTROY,
+        removalPolicy: RemovalPolicy.DESTROY
       });
 
       const template = Template.fromStack(stack);
@@ -70,36 +70,36 @@ describe("DatabaseTables", () => {
         KeySchema: [
           {
             AttributeName: "viewpoint_id",
-            KeyType: "HASH",
-          },
+            KeyType: "HASH"
+          }
         ],
         AttributeDefinitions: [
           {
             AttributeName: "viewpoint_id",
-            AttributeType: "S",
+            AttributeType: "S"
           },
           {
             AttributeName: "expire_time",
-            AttributeType: "N",
-          },
+            AttributeType: "N"
+          }
         ],
         BillingMode: "PAY_PER_REQUEST",
         PointInTimeRecoverySpecification: {
-          PointInTimeRecoveryEnabled: true,
-        },
+          PointInTimeRecoveryEnabled: true
+        }
       });
     });
 
     it("creates table with custom name and TTL attribute", () => {
       const customConfig = new DataplaneConfig({
         DDB_JOB_TABLE: "CustomJobTable",
-        DDB_TTL_ATTRIBUTE: "custom_expire_time",
+        DDB_TTL_ATTRIBUTE: "custom_expire_time"
       });
 
       new DatabaseTables(stack, "TestDatabaseTables", {
         account: testAccount,
         config: customConfig,
-        removalPolicy: RemovalPolicy.DESTROY,
+        removalPolicy: RemovalPolicy.DESTROY
       });
 
       const template = Template.fromStack(stack);
@@ -109,13 +109,13 @@ describe("DatabaseTables", () => {
         AttributeDefinitions: [
           {
             AttributeName: "viewpoint_id",
-            AttributeType: "S",
+            AttributeType: "S"
           },
           {
             AttributeName: "custom_expire_time",
-            AttributeType: "N",
-          },
-        ],
+            AttributeType: "N"
+          }
+        ]
       });
     });
 
@@ -123,7 +123,7 @@ describe("DatabaseTables", () => {
       new DatabaseTables(stack, "TestDatabaseTables", {
         account: testAccount,
         config: config,
-        removalPolicy: RemovalPolicy.DESTROY,
+        removalPolicy: RemovalPolicy.DESTROY
       });
 
       const template = Template.fromStack(stack);
@@ -135,14 +135,14 @@ describe("DatabaseTables", () => {
             KeySchema: [
               {
                 AttributeName: "expire_time",
-                KeyType: "HASH",
-              },
+                KeyType: "HASH"
+              }
             ],
             Projection: {
-              ProjectionType: "ALL",
-            },
-          },
-        ],
+              ProjectionType: "ALL"
+            }
+          }
+        ]
       });
     });
 
@@ -150,13 +150,13 @@ describe("DatabaseTables", () => {
       new DatabaseTables(stack, "TestDatabaseTables", {
         account: testAccount,
         config: config,
-        removalPolicy: RemovalPolicy.RETAIN,
+        removalPolicy: RemovalPolicy.RETAIN
       });
 
       const template = Template.fromStack(stack);
 
       template.hasResource("AWS::DynamoDB::Table", {
-        DeletionPolicy: "Retain",
+        DeletionPolicy: "Retain"
       });
     });
 
@@ -164,15 +164,15 @@ describe("DatabaseTables", () => {
       new DatabaseTables(stack, "TestDatabaseTables", {
         account: testAccount,
         config: config,
-        removalPolicy: RemovalPolicy.DESTROY,
+        removalPolicy: RemovalPolicy.DESTROY
       });
 
       const template = Template.fromStack(stack);
 
       template.hasResourceProperties("AWS::DynamoDB::Table", {
         SSESpecification: {
-          SSEEnabled: true,
-        },
+          SSEEnabled: true
+        }
       });
     });
   });
@@ -182,14 +182,14 @@ describe("DatabaseTables", () => {
       new DatabaseTables(stack, "TestDatabaseTables", {
         account: testProdAccount,
         config: config,
-        removalPolicy: RemovalPolicy.RETAIN,
+        removalPolicy: RemovalPolicy.RETAIN
       });
 
       const template = Template.fromStack(stack);
 
       // Should create backup vault
       template.hasResourceProperties("AWS::Backup::BackupVault", {
-        BackupVaultName: "TSBackupVault",
+        BackupVaultName: "TSBackupVault"
       });
 
       // Should create backup plan
@@ -203,7 +203,7 @@ describe("DatabaseTables", () => {
       new DatabaseTables(stack, "TestDatabaseTables", {
         account: testAccount,
         config: config,
-        removalPolicy: RemovalPolicy.DESTROY,
+        removalPolicy: RemovalPolicy.DESTROY
       });
 
       const template = Template.fromStack(stack);
@@ -218,7 +218,7 @@ describe("DatabaseTables", () => {
       new DatabaseTables(stack, "TestDatabaseTables", {
         account: testAdcAccount,
         config: config,
-        removalPolicy: RemovalPolicy.RETAIN,
+        removalPolicy: RemovalPolicy.RETAIN
       });
 
       const template = Template.fromStack(stack);
@@ -233,7 +233,7 @@ describe("DatabaseTables", () => {
       new DatabaseTables(stack, "TestDatabaseTables", {
         account: testProdAccount,
         config: config,
-        removalPolicy: RemovalPolicy.RETAIN,
+        removalPolicy: RemovalPolicy.RETAIN
       });
 
       const template = Template.fromStack(stack);
@@ -245,18 +245,18 @@ describe("DatabaseTables", () => {
             // Weekly backup rule
             {
               RuleName: "Weekly",
-              ScheduleExpression: "cron(0 5 ? * SAT *)",
+              ScheduleExpression: "cron(0 5 ? * SAT *)"
             },
             // Monthly 5-year retention rule
             {
               RuleName: "Monthly5Year",
               ScheduleExpression: "cron(0 5 1 * ? *)",
               Lifecycle: {
-                DeleteAfterDays: 1825, // 5 years
-              },
-            },
-          ],
-        },
+                DeleteAfterDays: 1825 // 5 years
+              }
+            }
+          ]
+        }
       });
     });
   });
@@ -266,17 +266,17 @@ describe("DatabaseTables", () => {
       new DatabaseTables(stack, "TestDatabaseTables1", {
         account: testAccount,
         config: config,
-        removalPolicy: RemovalPolicy.DESTROY,
+        removalPolicy: RemovalPolicy.DESTROY
       });
 
       const customConfig = new DataplaneConfig({
-        DDB_JOB_TABLE: "SecondJobTable",
+        DDB_JOB_TABLE: "SecondJobTable"
       });
 
       new DatabaseTables(stack, "TestDatabaseTables2", {
         account: testAccount,
         config: customConfig,
-        removalPolicy: RemovalPolicy.DESTROY,
+        removalPolicy: RemovalPolicy.DESTROY
       });
 
       const template = Template.fromStack(stack);
@@ -286,11 +286,11 @@ describe("DatabaseTables", () => {
 
       // Should have both table names
       template.hasResourceProperties("AWS::DynamoDB::Table", {
-        TableName: "TSJobTable",
+        TableName: "TSJobTable"
       });
 
       template.hasResourceProperties("AWS::DynamoDB::Table", {
-        TableName: "SecondJobTable",
+        TableName: "SecondJobTable"
       });
     });
 
@@ -298,7 +298,7 @@ describe("DatabaseTables", () => {
       new DatabaseTables(stack, "TestDatabaseTables", {
         account: testProdAccount,
         config: config,
-        removalPolicy: RemovalPolicy.RETAIN,
+        removalPolicy: RemovalPolicy.RETAIN
       });
 
       const template = Template.fromStack(stack);
@@ -306,17 +306,17 @@ describe("DatabaseTables", () => {
       template.hasResourceProperties("AWS::DynamoDB::Table", {
         // Point-in-time recovery enabled
         PointInTimeRecoverySpecification: {
-          PointInTimeRecoveryEnabled: true,
+          PointInTimeRecoveryEnabled: true
         },
         // Encryption enabled
         SSESpecification: {
-          SSEEnabled: true,
-        },
+          SSEEnabled: true
+        }
       });
 
       // Should have RETAIN deletion policy
       template.hasResource("AWS::DynamoDB::Table", {
-        DeletionPolicy: "Retain",
+        DeletionPolicy: "Retain"
       });
 
       // Backup resources should exist
@@ -332,7 +332,7 @@ describe("DatabaseTables", () => {
         new DatabaseTables(stack, "TestDatabaseTables", {
           account: testAccount,
           config: config,
-          removalPolicy: undefined!,
+          removalPolicy: undefined!
         });
       }).not.toThrow();
 
@@ -340,7 +340,7 @@ describe("DatabaseTables", () => {
 
       // Should default to DESTROY when removal policy is undefined
       template.hasResource("AWS::DynamoDB::Table", {
-        DeletionPolicy: "Delete",
+        DeletionPolicy: "Delete"
       });
     });
   });
@@ -353,14 +353,14 @@ describe("cdk-nag Compliance Checks - DatabaseTables", () => {
   beforeAll(() => {
     app = new App();
     stack = new Stack(app, "TestStack", {
-      env: { account: testAccount.id, region: testAccount.region },
+      env: { account: testAccount.id, region: testAccount.region }
     });
 
     const config = new DataplaneConfig();
     new DatabaseTables(stack, "TestDatabaseTables", {
       account: testAccount,
       config: config,
-      removalPolicy: RemovalPolicy.DESTROY,
+      removalPolicy: RemovalPolicy.DESTROY
     });
 
     // Add the cdk-nag AwsSolutions Pack with extra verbose logging enabled.
@@ -368,11 +368,11 @@ describe("cdk-nag Compliance Checks - DatabaseTables", () => {
 
     const errors = Annotations.fromStack(stack).findError(
       "*",
-      Match.stringLikeRegexp("AwsSolutions-.*"),
+      Match.stringLikeRegexp("AwsSolutions-.*")
     );
     const warnings = Annotations.fromStack(stack).findWarning(
       "*",
-      Match.stringLikeRegexp("AwsSolutions-.*"),
+      Match.stringLikeRegexp("AwsSolutions-.*")
     );
 
     generateNagReport(stack, errors, warnings);
@@ -381,7 +381,7 @@ describe("cdk-nag Compliance Checks - DatabaseTables", () => {
   test("No unsuppressed Warnings", () => {
     const warnings = Annotations.fromStack(stack).findWarning(
       "*",
-      Match.stringLikeRegexp("AwsSolutions-.*"),
+      Match.stringLikeRegexp("AwsSolutions-.*")
     );
     expect(warnings).toHaveLength(0);
   });
@@ -389,7 +389,7 @@ describe("cdk-nag Compliance Checks - DatabaseTables", () => {
   test("No unsuppressed Errors", () => {
     const errors = Annotations.fromStack(stack).findError(
       "*",
-      Match.stringLikeRegexp("AwsSolutions-.*"),
+      Match.stringLikeRegexp("AwsSolutions-.*")
     );
     expect(errors).toHaveLength(0);
   });

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 Amazon.com, Inc. or its affiliates.
+ * Copyright 2024-2026 Amazon.com, Inc. or its affiliates.
  */
 
 import { App, Aspects, Stack } from "aws-cdk-lib";
@@ -12,7 +12,7 @@ import { testAccount, testAdcAccount } from "../../test-account";
 import {
   CloudFormationResource,
   IAMManagedPolicyProperties,
-  IAMPolicyStatement,
+  IAMPolicyStatement
 } from "../../test-types";
 import { generateNagReport } from "../../test-utils";
 
@@ -23,7 +23,7 @@ describe("ECSRoles", () => {
   beforeEach(() => {
     app = new App();
     stack = new Stack(app, "TestStack", {
-      env: { account: testAccount.id, region: testAccount.region },
+      env: { account: testAccount.id, region: testAccount.region }
     });
   });
 
@@ -32,7 +32,7 @@ describe("ECSRoles", () => {
       const ecsRoles = new ECSRoles(stack, "TestECSRoles", {
         account: testAccount,
         taskRoleName: "TestTaskRole",
-        executionRoleName: "TestExecutionRole",
+        executionRoleName: "TestExecutionRole"
       });
 
       expect(ecsRoles.taskRole).toBeDefined();
@@ -44,13 +44,13 @@ describe("ECSRoles", () => {
       const existingTaskRole = Role.fromRoleArn(
         stack,
         "ExistingTaskRole",
-        `arn:aws:iam::${testAccount.id}:role/ExistingTaskRole`,
+        `arn:aws:iam::${testAccount.id}:role/ExistingTaskRole`
       );
 
       const existingExecutionRole = Role.fromRoleArn(
         stack,
         "ExistingExecutionRole",
-        `arn:aws:iam::${testAccount.id}:role/ExistingExecutionRole`,
+        `arn:aws:iam::${testAccount.id}:role/ExistingExecutionRole`
       );
 
       const ecsRoles = new ECSRoles(stack, "TestECSRoles", {
@@ -58,7 +58,7 @@ describe("ECSRoles", () => {
         taskRoleName: "TestTaskRole",
         executionRoleName: "TestExecutionRole",
         existingTaskRole: existingTaskRole,
-        existingExecutionRole: existingExecutionRole,
+        existingExecutionRole: existingExecutionRole
       });
 
       expect(ecsRoles.taskRole).toBe(existingTaskRole);
@@ -69,7 +69,7 @@ describe("ECSRoles", () => {
       const ecsRoles = new ECSRoles(stack, "TestECSRoles", {
         account: testAdcAccount,
         taskRoleName: "TestTaskRole",
-        executionRoleName: "TestExecutionRole",
+        executionRoleName: "TestExecutionRole"
       });
 
       expect(ecsRoles.partition).toBe("aws-iso-b");
@@ -81,7 +81,7 @@ describe("ECSRoles", () => {
       new ECSRoles(stack, "TestECSRoles", {
         account: testAccount,
         taskRoleName: "TestTaskRole",
-        executionRoleName: "TestExecutionRole",
+        executionRoleName: "TestExecutionRole"
       });
 
       const template = Template.fromStack(stack);
@@ -89,8 +89,7 @@ describe("ECSRoles", () => {
       // Should create task role with correct name
       template.hasResourceProperties("AWS::IAM::Role", {
         RoleName: "TestTaskRole",
-        Description:
-          "Allows access necessary AWS services (SQS, DynamoDB, ...)",
+        Description: "Allows access necessary AWS services (SQS, DynamoDB, ...)"
       });
 
       // Should have assume role policy with correct principals
@@ -99,7 +98,7 @@ describe("ECSRoles", () => {
         (role: unknown) =>
           (role as CloudFormationResource).Properties &&
           ((role as CloudFormationResource).Properties as { RoleName: string })
-            .RoleName === "TestTaskRole",
+            .RoleName === "TestTaskRole"
       ) as CloudFormationResource;
 
       const roleProps = taskRole.Properties as {
@@ -107,7 +106,7 @@ describe("ECSRoles", () => {
       };
       expect(roleProps.AssumeRolePolicyDocument.Statement).toBeDefined();
       expect(
-        roleProps.AssumeRolePolicyDocument.Statement.length,
+        roleProps.AssumeRolePolicyDocument.Statement.length
       ).toBeGreaterThan(0);
     });
 
@@ -115,14 +114,14 @@ describe("ECSRoles", () => {
       new ECSRoles(stack, "TestECSRoles", {
         account: testAccount,
         taskRoleName: "TestTaskRole",
-        executionRoleName: "TestExecutionRole",
+        executionRoleName: "TestExecutionRole"
       });
 
       const template = Template.fromStack(stack);
 
       // Verify task policy exists with correct name
       template.hasResourceProperties("AWS::IAM::ManagedPolicy", {
-        ManagedPolicyName: "TileServerEcsTaskPolicy",
+        ManagedPolicyName: "TileServerEcsTaskPolicy"
       });
 
       // Find the policy and verify it has necessary statements
@@ -133,7 +132,7 @@ describe("ECSRoles", () => {
           (
             (policy as CloudFormationResource)
               .Properties as unknown as IAMManagedPolicyProperties
-          ).ManagedPolicyName === "TileServerEcsTaskPolicy",
+          ).ManagedPolicyName === "TileServerEcsTaskPolicy"
       ) as CloudFormationResource;
 
       expect(taskPolicy).toBeDefined();
@@ -141,7 +140,7 @@ describe("ECSRoles", () => {
         taskPolicy.Properties as unknown as IAMManagedPolicyProperties;
       expect(policyProps.PolicyDocument.Statement).toBeDefined();
       expect(
-        policyProps.PolicyDocument.Statement.length,
+        policyProps.PolicyDocument.Statement.length
       ).toBeGreaterThanOrEqual(4); // S3, KMS, STS, CloudWatch
     });
   });
@@ -151,7 +150,7 @@ describe("ECSRoles", () => {
       new ECSRoles(stack, "TestECSRoles", {
         account: testAccount,
         taskRoleName: "TestTaskRole",
-        executionRoleName: "TestExecutionRole",
+        executionRoleName: "TestExecutionRole"
       });
 
       const template = Template.fromStack(stack);
@@ -160,7 +159,7 @@ describe("ECSRoles", () => {
       template.hasResourceProperties("AWS::IAM::Role", {
         RoleName: "TestExecutionRole",
         Description:
-          "Allows the Oversight Tile Server to access necessary AWS services to boot up the ECS task...",
+          "Allows the Oversight Tile Server to access necessary AWS services to boot up the ECS task..."
       });
     });
 
@@ -168,14 +167,14 @@ describe("ECSRoles", () => {
       new ECSRoles(stack, "TestECSRoles", {
         account: testAccount,
         taskRoleName: "TestTaskRole",
-        executionRoleName: "TestExecutionRole",
+        executionRoleName: "TestExecutionRole"
       });
 
       const template = Template.fromStack(stack);
 
       // Verify execution policy exists and has ECR permissions
       template.hasResourceProperties("AWS::IAM::ManagedPolicy", {
-        ManagedPolicyName: "TileServerExecutionPolicy",
+        ManagedPolicyName: "TileServerExecutionPolicy"
       });
 
       const policies = template.findResources("AWS::IAM::ManagedPolicy");
@@ -185,7 +184,7 @@ describe("ECSRoles", () => {
           (
             (policy as CloudFormationResource)
               .Properties as unknown as IAMManagedPolicyProperties
-          ).ManagedPolicyName === "TileServerExecutionPolicy",
+          ).ManagedPolicyName === "TileServerExecutionPolicy"
       ) as CloudFormationResource;
 
       expect(executionPolicy).toBeDefined();
@@ -196,7 +195,7 @@ describe("ECSRoles", () => {
 
       // Verify key ECR actions are present
       const allActions = statements.flatMap(
-        (stmt: IAMPolicyStatement) => stmt.Action,
+        (stmt: IAMPolicyStatement) => stmt.Action
       );
       expect(allActions).toContain("ecr:GetAuthorizationToken");
       expect(allActions).toContain("ecr:BatchGetImage");
@@ -208,7 +207,7 @@ describe("ECSRoles", () => {
       const ecsRoles = new ECSRoles(stack, "TestECSRoles", {
         account: testAccount,
         taskRoleName: "TestTaskRole",
-        executionRoleName: "TestExecutionRole",
+        executionRoleName: "TestExecutionRole"
       });
 
       expect(ecsRoles.partition).toBe("aws");
@@ -216,13 +215,13 @@ describe("ECSRoles", () => {
 
     it("correctly identifies AWS ISO-B partition for ADC regions", () => {
       const adcStack = new Stack(app, "ADCStack", {
-        env: { account: testAdcAccount.id, region: testAdcAccount.region },
+        env: { account: testAdcAccount.id, region: testAdcAccount.region }
       });
 
       const ecsRoles = new ECSRoles(adcStack, "TestECSRoles", {
         account: testAdcAccount,
         taskRoleName: "TestTaskRole",
-        executionRoleName: "TestExecutionRole",
+        executionRoleName: "TestExecutionRole"
       });
 
       expect(ecsRoles.partition).toBe("aws-iso-b");
@@ -232,7 +231,7 @@ describe("ECSRoles", () => {
       new ECSRoles(stack, "TestECSRoles", {
         account: testAccount,
         taskRoleName: "TestTaskRole",
-        executionRoleName: "TestExecutionRole",
+        executionRoleName: "TestExecutionRole"
       });
 
       const template = Template.fromStack(stack);
@@ -245,24 +244,24 @@ describe("ECSRoles", () => {
           (
             (policy as CloudFormationResource)
               .Properties as unknown as IAMManagedPolicyProperties
-          ).ManagedPolicyName === "TileServerEcsTaskPolicy",
+          ).ManagedPolicyName === "TileServerEcsTaskPolicy"
       ) as CloudFormationResource;
 
       expect(taskPolicy).toBeDefined();
       const policyProps =
         taskPolicy.Properties as unknown as IAMManagedPolicyProperties;
       const allResources = policyProps.PolicyDocument.Statement.flatMap(
-        (stmt: IAMPolicyStatement) => stmt.Resource || [],
+        (stmt: IAMPolicyStatement) => stmt.Resource || []
       );
 
       // Should have AWS partition ARNs (not ADC or other partitions)
       expect(
-        allResources.some((resource: string) => resource.includes("arn:aws:")),
+        allResources.some((resource: string) => resource.includes("arn:aws:"))
       ).toBe(true);
       expect(
         allResources.some((resource: string) =>
-          resource.includes("arn:aws:s3:"),
-        ),
+          resource.includes("arn:aws:s3:")
+        )
       ).toBe(true);
     });
   });
@@ -272,7 +271,7 @@ describe("ECSRoles", () => {
       new ECSRoles(stack, "TestECSRoles", {
         account: testAccount,
         taskRoleName: "TestTaskRole",
-        executionRoleName: "TestExecutionRole",
+        executionRoleName: "TestExecutionRole"
       });
 
       const template = Template.fromStack(stack);
@@ -285,11 +284,11 @@ describe("ECSRoles", () => {
 
       // Verify policies are created with correct names
       template.hasResourceProperties("AWS::IAM::ManagedPolicy", {
-        ManagedPolicyName: "TileServerEcsTaskPolicy",
+        ManagedPolicyName: "TileServerEcsTaskPolicy"
       });
 
       template.hasResourceProperties("AWS::IAM::ManagedPolicy", {
-        ManagedPolicyName: "TileServerExecutionPolicy",
+        ManagedPolicyName: "TileServerExecutionPolicy"
       });
     });
 
@@ -297,14 +296,14 @@ describe("ECSRoles", () => {
       const existingTaskRole = Role.fromRoleArn(
         stack,
         "ExistingTaskRole",
-        `arn:aws:iam::${testAccount.id}:role/ExistingTaskRole`,
+        `arn:aws:iam::${testAccount.id}:role/ExistingTaskRole`
       );
 
       const ecsRoles = new ECSRoles(stack, "TestECSRoles", {
         account: testAccount,
         taskRoleName: "TestTaskRole",
         executionRoleName: "TestExecutionRole",
-        existingTaskRole: existingTaskRole,
+        existingTaskRole: existingTaskRole
       });
 
       // Should use existing task role but create new execution role
@@ -319,7 +318,7 @@ describe("ECSRoles", () => {
 
       // Should still create execution role
       template.hasResourceProperties("AWS::IAM::Role", {
-        RoleName: "TestExecutionRole",
+        RoleName: "TestExecutionRole"
       });
     });
   });
@@ -329,7 +328,7 @@ describe("ECSRoles", () => {
       new ECSRoles(stack, "TestECSRoles", {
         account: testAccount,
         taskRoleName: "TestTaskRole",
-        executionRoleName: "TestExecutionRole",
+        executionRoleName: "TestExecutionRole"
       });
 
       const template = Template.fromStack(stack);
@@ -342,7 +341,7 @@ describe("ECSRoles", () => {
           (
             (policy as CloudFormationResource)
               .Properties as unknown as IAMManagedPolicyProperties
-          ).ManagedPolicyName === "TileServerEcsTaskPolicy",
+          ).ManagedPolicyName === "TileServerEcsTaskPolicy"
       ) as CloudFormationResource;
 
       expect(taskPolicy).toBeDefined();
@@ -354,7 +353,7 @@ describe("ECSRoles", () => {
 
       // Verify key actions are present somewhere in the policy
       const allActions = statements.flatMap(
-        (stmt: IAMPolicyStatement) => stmt.Action,
+        (stmt: IAMPolicyStatement) => stmt.Action
       );
       expect(allActions).toContain("sts:AssumeRole");
       expect(allActions).toContain("s3:GetObject");
@@ -365,7 +364,7 @@ describe("ECSRoles", () => {
       new ECSRoles(stack, "TestECSRoles", {
         account: testAccount,
         taskRoleName: "TestTaskRole",
-        executionRoleName: "TestExecutionRole",
+        executionRoleName: "TestExecutionRole"
       });
 
       const template = Template.fromStack(stack);
@@ -378,7 +377,7 @@ describe("ECSRoles", () => {
           (
             (policy as CloudFormationResource)
               .Properties as unknown as IAMManagedPolicyProperties
-          ).ManagedPolicyName === "TileServerExecutionPolicy",
+          ).ManagedPolicyName === "TileServerExecutionPolicy"
       ) as CloudFormationResource;
 
       expect(executionPolicy).toBeDefined();
@@ -389,7 +388,7 @@ describe("ECSRoles", () => {
 
       // Verify key ECR actions are present
       const allActions = statements.flatMap(
-        (stmt: IAMPolicyStatement) => stmt.Action,
+        (stmt: IAMPolicyStatement) => stmt.Action
       );
       expect(allActions).toContain("ecr:GetAuthorizationToken");
       expect(allActions).toContain("ecr:BatchGetImage");
@@ -401,7 +400,7 @@ describe("ECSRoles", () => {
       new ECSRoles(stack, "TestECSRoles", {
         account: testAccount,
         taskRoleName: "TestTaskRole",
-        executionRoleName: "TestExecutionRole",
+        executionRoleName: "TestExecutionRole"
       });
 
       const template = Template.fromStack(stack);
@@ -411,7 +410,7 @@ describe("ECSRoles", () => {
       const taskPolicy = Object.values(policies).find(
         (policy: unknown) =>
           (policy as { Properties: { ManagedPolicyName: string } }).Properties
-            .ManagedPolicyName === "TileServerEcsTaskPolicy",
+            .ManagedPolicyName === "TileServerEcsTaskPolicy"
       ) as unknown;
 
       expect(taskPolicy).toBeDefined();
@@ -422,24 +421,24 @@ describe("ECSRoles", () => {
       };
       const allResources =
         policyProps.Properties.PolicyDocument.Statement.flatMap(
-          (stmt: { Resource?: string[] }) => stmt.Resource || [],
+          (stmt: { Resource?: string[] }) => stmt.Resource || []
         );
 
       // Should have AWS partition ARNs
       expect(
-        allResources.some((resource: string) => resource.includes("arn:aws:")),
+        allResources.some((resource: string) => resource.includes("arn:aws:"))
       ).toBe(true);
     });
 
     it("constructs correct ARNs for ADC partition", () => {
       const adcStack = new Stack(app, "ADCStack", {
-        env: { account: testAdcAccount.id, region: testAdcAccount.region },
+        env: { account: testAdcAccount.id, region: testAdcAccount.region }
       });
 
       new ECSRoles(adcStack, "TestECSRoles", {
         account: testAdcAccount,
         taskRoleName: "TestTaskRole",
-        executionRoleName: "TestExecutionRole",
+        executionRoleName: "TestExecutionRole"
       });
 
       const template = Template.fromStack(adcStack);
@@ -449,7 +448,7 @@ describe("ECSRoles", () => {
       const taskPolicy = Object.values(policies).find(
         (policy: unknown) =>
           (policy as { Properties: { ManagedPolicyName: string } }).Properties
-            .ManagedPolicyName === "TileServerEcsTaskPolicy",
+            .ManagedPolicyName === "TileServerEcsTaskPolicy"
       ) as unknown;
 
       expect(taskPolicy).toBeDefined();
@@ -460,14 +459,14 @@ describe("ECSRoles", () => {
       };
       const allResources =
         policyProps.Properties.PolicyDocument.Statement.flatMap(
-          (stmt: { Resource?: string[] }) => stmt.Resource || [],
+          (stmt: { Resource?: string[] }) => stmt.Resource || []
         );
 
       // Should have AWS ISO-B partition ARNs
       expect(
         allResources.some((resource: string) =>
-          resource.includes("arn:aws-iso-b:"),
-        ),
+          resource.includes("arn:aws-iso-b:")
+        )
       ).toBe(true);
     });
   });
@@ -480,13 +479,13 @@ describe("cdk-nag Compliance Checks - ECSRoles", () => {
   beforeAll(() => {
     app = new App();
     stack = new Stack(app, "TestStack", {
-      env: { account: testAccount.id, region: testAccount.region },
+      env: { account: testAccount.id, region: testAccount.region }
     });
 
     new ECSRoles(stack, "TestECSRoles", {
       account: testAccount,
       taskRoleName: "TestTaskRole",
-      executionRoleName: "TestExecutionRole",
+      executionRoleName: "TestExecutionRole"
     });
 
     // Add the cdk-nag AwsSolutions Pack with extra verbose logging enabled.
@@ -494,11 +493,11 @@ describe("cdk-nag Compliance Checks - ECSRoles", () => {
 
     const errors = Annotations.fromStack(stack).findError(
       "*",
-      Match.stringLikeRegexp("AwsSolutions-.*"),
+      Match.stringLikeRegexp("AwsSolutions-.*")
     );
     const warnings = Annotations.fromStack(stack).findWarning(
       "*",
-      Match.stringLikeRegexp("AwsSolutions-.*"),
+      Match.stringLikeRegexp("AwsSolutions-.*")
     );
 
     generateNagReport(stack, errors, warnings);
@@ -507,7 +506,7 @@ describe("cdk-nag Compliance Checks - ECSRoles", () => {
   test("No unsuppressed Warnings", () => {
     const warnings = Annotations.fromStack(stack).findWarning(
       "*",
-      Match.stringLikeRegexp("AwsSolutions-.*"),
+      Match.stringLikeRegexp("AwsSolutions-.*")
     );
     expect(warnings).toHaveLength(0);
   });
@@ -515,7 +514,7 @@ describe("cdk-nag Compliance Checks - ECSRoles", () => {
   test("No unsuppressed Errors", () => {
     const errors = Annotations.fromStack(stack).findError(
       "*",
-      Match.stringLikeRegexp("AwsSolutions-.*"),
+      Match.stringLikeRegexp("AwsSolutions-.*")
     );
     expect(errors).toHaveLength(0);
   });

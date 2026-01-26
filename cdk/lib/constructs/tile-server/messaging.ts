@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 Amazon.com, Inc. or its affiliates.
+ * Copyright 2023-2026 Amazon.com, Inc. or its affiliates.
  */
 
 import { Duration, RemovalPolicy } from "aws-cdk-lib";
@@ -57,7 +57,7 @@ export class Messaging extends Construct {
   private createJobQueue(props: MessagingProps): Queue {
     this.jobDlQueue = new Queue(this, "TSJobQueueDLQ", {
       queueName: `${props.config.SQS_JOB_QUEUE}-dlq`,
-      retentionPeriod: Duration.days(14),
+      retentionPeriod: Duration.days(14)
     });
 
     // Add policy to enforce SSL for DLQ
@@ -70,10 +70,10 @@ export class Messaging extends Construct {
         resources: [this.jobDlQueue.queueArn],
         conditions: {
           Bool: {
-            "aws:SecureTransport": "false",
-          },
-        },
-      }),
+            "aws:SecureTransport": "false"
+          }
+        }
+      })
     );
 
     const jobQueue = new Queue(this, "TSJobQueue", {
@@ -83,8 +83,8 @@ export class Messaging extends Construct {
       removalPolicy: RemovalPolicy.DESTROY,
       deadLetterQueue: {
         maxReceiveCount: 3,
-        queue: this.jobDlQueue,
-      },
+        queue: this.jobDlQueue
+      }
     });
 
     // Add policy to enforce SSL for main queue
@@ -97,10 +97,10 @@ export class Messaging extends Construct {
         resources: [jobQueue.queueArn],
         conditions: {
           Bool: {
-            "aws:SecureTransport": "false",
-          },
-        },
-      }),
+            "aws:SecureTransport": "false"
+          }
+        }
+      })
     );
 
     return jobQueue;

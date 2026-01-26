@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 Amazon.com, Inc. or its affiliates.
+ * Copyright 2024-2026 Amazon.com, Inc. or its affiliates.
  */
 
 import { App, Aspects, Stack } from "aws-cdk-lib";
@@ -8,7 +8,7 @@ import { AwsSolutionsChecks } from "cdk-nag";
 
 import {
   Network,
-  NetworkConfig,
+  NetworkConfig
 } from "../../../lib/constructs/tile-server/network";
 import { testAccount } from "../../test-account";
 import { generateNagReport } from "../../test-utils";
@@ -33,7 +33,7 @@ describe("NetworkConfig", () => {
         MAX_AZS: 2,
         VPC_ID: "vpc-12345678",
         SECURITY_GROUP_ID: "sg-87654321",
-        TARGET_SUBNETS: ["subnet-123", "subnet-456"],
+        TARGET_SUBNETS: ["subnet-123", "subnet-456"]
       };
 
       const config = new NetworkConfig(customConfig);
@@ -55,14 +55,14 @@ describe("Network", () => {
   beforeEach(() => {
     app = new App();
     stack = new Stack(app, "TestStack", {
-      env: { account: testAccount.id, region: testAccount.region },
+      env: { account: testAccount.id, region: testAccount.region }
     });
   });
 
   describe("constructor", () => {
     it("creates network with default configuration", () => {
       const network = new Network(stack, "TestNetwork", {
-        account: testAccount,
+        account: testAccount
       });
 
       expect(network.vpc).toBeDefined();
@@ -75,12 +75,12 @@ describe("Network", () => {
     it("creates network with custom configuration", () => {
       const customConfig = new NetworkConfig({
         VPC_NAME: "custom-vpc",
-        SECURITY_GROUP_NAME: "custom-security-group",
+        SECURITY_GROUP_NAME: "custom-security-group"
       });
 
       const network = new Network(stack, "TestNetwork", {
         account: testAccount,
-        config: customConfig,
+        config: customConfig
       });
 
       expect(network.vpc).toBeDefined();
@@ -91,7 +91,7 @@ describe("Network", () => {
     it("handles container port configuration", () => {
       const network = new Network(stack, "TestNetwork", {
         account: testAccount,
-        containerPort: 8080,
+        containerPort: 8080
       });
 
       expect(network.vpc).toBeDefined();
@@ -102,7 +102,7 @@ describe("Network", () => {
   describe("VPC creation", () => {
     it("creates new VPC with default settings", () => {
       new Network(stack, "TestNetwork", {
-        account: testAccount,
+        account: testAccount
       });
 
       const template = Template.fromStack(stack);
@@ -110,18 +110,18 @@ describe("Network", () => {
       template.hasResourceProperties("AWS::EC2::VPC", {
         CidrBlock: "10.0.0.0/16",
         EnableDnsHostnames: true,
-        EnableDnsSupport: true,
+        EnableDnsSupport: true
       });
     });
 
     it("creates VPC with custom name", () => {
       const customConfig = new NetworkConfig({
-        VPC_NAME: "my-custom-vpc",
+        VPC_NAME: "my-custom-vpc"
       });
 
       new Network(stack, "TestNetwork", {
         account: testAccount,
-        config: customConfig,
+        config: customConfig
       });
 
       const template = Template.fromStack(stack);
@@ -135,7 +135,7 @@ describe("Network", () => {
 
       const tags = vpcProps.Properties.Tags || [];
       const nameTag = tags.find(
-        (tag: { Key: string; Value: string }) => tag.Key === "Name",
+        (tag: { Key: string; Value: string }) => tag.Key === "Name"
       );
       expect(nameTag).toBeDefined();
       expect(nameTag!.Value).toBe("my-custom-vpc");
@@ -143,12 +143,12 @@ describe("Network", () => {
 
     it("respects MAX_AZS configuration", () => {
       const customConfig = new NetworkConfig({
-        MAX_AZS: 2,
+        MAX_AZS: 2
       });
 
       new Network(stack, "TestNetwork", {
         account: testAccount,
-        config: customConfig,
+        config: customConfig
       });
 
       const template = Template.fromStack(stack);
@@ -159,7 +159,7 @@ describe("Network", () => {
 
     it("creates public and private subnets", () => {
       new Network(stack, "TestNetwork", {
-        account: testAccount,
+        account: testAccount
       });
 
       const template = Template.fromStack(stack);
@@ -176,7 +176,7 @@ describe("Network", () => {
 
     it("creates route tables for public and private subnets", () => {
       new Network(stack, "TestNetwork", {
-        account: testAccount,
+        account: testAccount
       });
 
       const template = Template.fromStack(stack);
@@ -193,12 +193,12 @@ describe("Network", () => {
     it("imports existing VPC when VPC_ID is provided", () => {
       // Note: This test verifies the lookup configuration, not the actual import
       const customConfig = new NetworkConfig({
-        VPC_ID: "vpc-12345678",
+        VPC_ID: "vpc-12345678"
       });
 
       const network = new Network(stack, "TestNetwork", {
         account: testAccount,
-        config: customConfig,
+        config: customConfig
       });
 
       expect(network.vpc).toBeDefined();
@@ -209,37 +209,37 @@ describe("Network", () => {
   describe("security group creation", () => {
     it("creates new security group with default settings", () => {
       new Network(stack, "TestNetwork", {
-        account: testAccount,
+        account: testAccount
       });
 
       const template = Template.fromStack(stack);
 
       template.hasResourceProperties("AWS::EC2::SecurityGroup", {
         GroupName: "tile-server-security-group",
-        GroupDescription: "Security group with outbound and ALB access",
+        GroupDescription: "Security group with outbound and ALB access"
       });
     });
 
     it("creates security group with custom name", () => {
       const customConfig = new NetworkConfig({
-        SECURITY_GROUP_NAME: "my-custom-sg",
+        SECURITY_GROUP_NAME: "my-custom-sg"
       });
 
       new Network(stack, "TestNetwork", {
         account: testAccount,
-        config: customConfig,
+        config: customConfig
       });
 
       const template = Template.fromStack(stack);
 
       template.hasResourceProperties("AWS::EC2::SecurityGroup", {
-        GroupName: "my-custom-sg",
+        GroupName: "my-custom-sg"
       });
     });
 
     it("allows all outbound traffic", () => {
       new Network(stack, "TestNetwork", {
-        account: testAccount,
+        account: testAccount
       });
 
       const template = Template.fromStack(stack);
@@ -249,15 +249,15 @@ describe("Network", () => {
           {
             CidrIp: "0.0.0.0/0",
             Description: "Allow all outbound traffic by default",
-            IpProtocol: "-1",
-          },
-        ],
+            IpProtocol: "-1"
+          }
+        ]
       });
     });
 
     it("adds ALB ingress rule on port 80", () => {
       new Network(stack, "TestNetwork", {
-        account: testAccount,
+        account: testAccount
       });
 
       const template = Template.fromStack(stack);
@@ -279,11 +279,11 @@ describe("Network", () => {
       const rules = sgProps.Properties.SecurityGroupIngress;
 
       const port80Rule = rules.find(
-        (rule: { FromPort: number }) => rule.FromPort === 80,
+        (rule: { FromPort: number }) => rule.FromPort === 80
       );
       expect(port80Rule).toBeDefined();
       expect(port80Rule!.Description).toBe(
-        "Allow inbound traffic to ALB on port 80",
+        "Allow inbound traffic to ALB on port 80"
       );
       expect(port80Rule!.IpProtocol).toBe("tcp");
     });
@@ -291,7 +291,7 @@ describe("Network", () => {
     it("adds container port ingress rule when provided", () => {
       new Network(stack, "TestNetwork", {
         account: testAccount,
-        containerPort: 8080,
+        containerPort: 8080
       });
 
       const template = Template.fromStack(stack);
@@ -313,27 +313,27 @@ describe("Network", () => {
 
       const rules = sgProps.Properties.SecurityGroupIngress;
       const port80Rule = rules.find(
-        (rule: { FromPort: number }) => rule.FromPort === 80,
+        (rule: { FromPort: number }) => rule.FromPort === 80
       );
       const port8080Rule = rules.find(
-        (rule: { FromPort: number }) => rule.FromPort === 8080,
+        (rule: { FromPort: number }) => rule.FromPort === 8080
       );
 
       expect(port80Rule).toBeDefined();
       expect(port8080Rule).toBeDefined();
       expect(port8080Rule!.Description).toBe(
-        "Allow ALB to reach container on port 8080",
+        "Allow ALB to reach container on port 8080"
       );
     });
 
     it("imports existing security group when SECURITY_GROUP_ID is provided", () => {
       const customConfig = new NetworkConfig({
-        SECURITY_GROUP_ID: "sg-12345678",
+        SECURITY_GROUP_ID: "sg-12345678"
       });
 
       const network = new Network(stack, "TestNetwork", {
         account: testAccount,
-        config: customConfig,
+        config: customConfig
       });
 
       expect(network.securityGroup).toBeDefined();
@@ -349,7 +349,7 @@ describe("Network", () => {
   describe("subnet selection", () => {
     it("selects private subnets by default", () => {
       const network = new Network(stack, "TestNetwork", {
-        account: testAccount,
+        account: testAccount
       });
 
       expect(network.selectedSubnets).toBeDefined();
@@ -363,12 +363,12 @@ describe("Network", () => {
 
     it("selects specified target subnets when provided", () => {
       const customConfig = new NetworkConfig({
-        TARGET_SUBNETS: ["subnet-123", "subnet-456"],
+        TARGET_SUBNETS: ["subnet-123", "subnet-456"]
       });
 
       const network = new Network(stack, "TestNetwork", {
         account: testAccount,
-        config: customConfig,
+        config: customConfig
       });
 
       expect(network.selectedSubnets).toBeDefined();
@@ -380,7 +380,7 @@ describe("Network", () => {
     it("uses regional config for VPC AZ limits", () => {
       // us-west-2 should have maxVpcAzs: 3
       new Network(stack, "TestNetwork", {
-        account: testAccount,
+        account: testAccount
       });
 
       const template = Template.fromStack(stack);
@@ -391,12 +391,12 @@ describe("Network", () => {
 
     it("respects custom MAX_AZS over regional config", () => {
       const customConfig = new NetworkConfig({
-        MAX_AZS: 2, // Override regional default of 3
+        MAX_AZS: 2 // Override regional default of 3
       });
 
       new Network(stack, "TestNetwork", {
         account: testAccount,
-        config: customConfig,
+        config: customConfig
       });
 
       const template = Template.fromStack(stack);
@@ -410,7 +410,7 @@ describe("Network", () => {
     it("creates complete network infrastructure", () => {
       new Network(stack, "TestNetwork", {
         account: testAccount,
-        containerPort: 8080,
+        containerPort: 8080
       });
 
       const template = Template.fromStack(stack);
@@ -437,12 +437,12 @@ describe("Network", () => {
     it("handles mixed import and create scenarios", () => {
       const customConfig = new NetworkConfig({
         VPC_ID: "vpc-12345678", // Import VPC
-        SECURITY_GROUP_NAME: "new-sg", // Create new security group
+        SECURITY_GROUP_NAME: "new-sg" // Create new security group
       });
 
       const network = new Network(stack, "TestNetwork", {
         account: testAccount,
-        config: customConfig,
+        config: customConfig
       });
 
       expect(network.vpc).toBeDefined();
@@ -461,12 +461,12 @@ describe("Network", () => {
     it("handles full import scenario", () => {
       const customConfig = new NetworkConfig({
         VPC_ID: "vpc-12345678",
-        SECURITY_GROUP_ID: "sg-87654321",
+        SECURITY_GROUP_ID: "sg-87654321"
       });
 
       const network = new Network(stack, "TestNetwork", {
         account: testAccount,
-        config: customConfig,
+        config: customConfig
       });
 
       expect(network.vpc).toBeDefined();
@@ -484,7 +484,7 @@ describe("Network", () => {
     it("creates appropriate ingress rules with container port", () => {
       new Network(stack, "TestNetwork", {
         account: testAccount,
-        containerPort: 9000,
+        containerPort: 9000
       });
 
       const template = Template.fromStack(stack);
@@ -506,25 +506,25 @@ describe("Network", () => {
 
       const rules = sgProps.Properties.SecurityGroupIngress;
       const port80Rule = rules.find(
-        (rule: { FromPort: number }) => rule.FromPort === 80,
+        (rule: { FromPort: number }) => rule.FromPort === 80
       );
       const port9000Rule = rules.find(
-        (rule: { FromPort: number }) => rule.FromPort === 9000,
+        (rule: { FromPort: number }) => rule.FromPort === 9000
       );
 
       expect(port80Rule).toBeDefined();
       expect(port9000Rule).toBeDefined();
       expect(port80Rule!.Description).toBe(
-        "Allow inbound traffic to ALB on port 80",
+        "Allow inbound traffic to ALB on port 80"
       );
       expect(port9000Rule!.Description).toBe(
-        "Allow ALB to reach container on port 9000",
+        "Allow ALB to reach container on port 9000"
       );
     });
 
     it("creates only ALB ingress rule without container port", () => {
       new Network(stack, "TestNetwork", {
-        account: testAccount,
+        account: testAccount
         // No containerPort provided
       });
 
@@ -549,7 +549,7 @@ describe("Network", () => {
 
       const ingressRule = sgProps.Properties.SecurityGroupIngress[0];
       expect(ingressRule.Description).toBe(
-        "Allow inbound traffic to ALB on port 80",
+        "Allow inbound traffic to ALB on port 80"
       );
       expect(ingressRule.FromPort).toBe(80);
       expect(ingressRule.ToPort).toBe(80);
@@ -560,7 +560,7 @@ describe("Network", () => {
   describe("subnet configuration", () => {
     it("creates public and private subnet configurations", () => {
       new Network(stack, "TestNetwork", {
-        account: testAccount,
+        account: testAccount
       });
 
       const template = Template.fromStack(stack);
@@ -593,7 +593,7 @@ describe("Network", () => {
 
     it("configures subnet CIDR masks correctly", () => {
       new Network(stack, "TestNetwork", {
-        account: testAccount,
+        account: testAccount
       });
 
       const template = Template.fromStack(stack);
@@ -611,7 +611,7 @@ describe("Network", () => {
   describe("network infrastructure", () => {
     it("creates Internet Gateway for public connectivity", () => {
       new Network(stack, "TestNetwork", {
-        account: testAccount,
+        account: testAccount
       });
 
       const template = Template.fromStack(stack);
@@ -624,7 +624,7 @@ describe("Network", () => {
 
     it("creates NAT Gateways for private subnet connectivity", () => {
       new Network(stack, "TestNetwork", {
-        account: testAccount,
+        account: testAccount
       });
 
       const template = Template.fromStack(stack);
@@ -639,7 +639,7 @@ describe("Network", () => {
 
     it("creates appropriate route table associations", () => {
       new Network(stack, "TestNetwork", {
-        account: testAccount,
+        account: testAccount
       });
 
       const template = Template.fromStack(stack);
@@ -652,11 +652,11 @@ describe("Network", () => {
   describe("mixed scenarios", () => {
     it("handles different regional configurations", () => {
       const eastStack = new Stack(app, "EastStack", {
-        env: { account: testAccount.id, region: "us-east-1" },
+        env: { account: testAccount.id, region: "us-east-1" }
       });
 
       new Network(eastStack, "TestNetwork", {
-        account: { ...testAccount, region: "us-east-1" },
+        account: { ...testAccount, region: "us-east-1" }
       });
 
       const template = Template.fromStack(eastStack);
@@ -667,11 +667,11 @@ describe("Network", () => {
 
     it("handles regions with limited AZ availability", () => {
       const westStack = new Stack(app, "WestStack", {
-        env: { account: testAccount.id, region: "us-west-1" },
+        env: { account: testAccount.id, region: "us-west-1" }
       });
 
       new Network(westStack, "TestNetwork", {
-        account: { ...testAccount, region: "us-west-1" },
+        account: { ...testAccount, region: "us-west-1" }
       });
 
       const template = Template.fromStack(westStack);
@@ -686,20 +686,20 @@ describe("Network", () => {
       expect(() => {
         new Network(stack, "TestNetwork", {
           account: testAccount,
-          config: undefined,
+          config: undefined
         });
       }).not.toThrow();
     });
 
     it("creates default config when none provided", () => {
       const network = new Network(stack, "TestNetwork", {
-        account: testAccount,
+        account: testAccount
       });
 
       expect(network.config).toBeInstanceOf(NetworkConfig);
       expect(network.config.VPC_NAME).toBe("tile-server-vpc");
       expect(network.config.SECURITY_GROUP_NAME).toBe(
-        "tile-server-security-group",
+        "tile-server-security-group"
       );
     });
   });
@@ -712,12 +712,12 @@ describe("cdk-nag Compliance Checks - Network", () => {
   beforeAll(() => {
     app = new App();
     stack = new Stack(app, "TestStack", {
-      env: { account: testAccount.id, region: testAccount.region },
+      env: { account: testAccount.id, region: testAccount.region }
     });
 
     new Network(stack, "TestNetwork", {
       account: testAccount,
-      containerPort: 8080,
+      containerPort: 8080
     });
 
     // Add the cdk-nag AwsSolutions Pack with extra verbose logging enabled.
@@ -725,11 +725,11 @@ describe("cdk-nag Compliance Checks - Network", () => {
 
     const errors = Annotations.fromStack(stack).findError(
       "*",
-      Match.stringLikeRegexp("AwsSolutions-.*"),
+      Match.stringLikeRegexp("AwsSolutions-.*")
     );
     const warnings = Annotations.fromStack(stack).findWarning(
       "*",
-      Match.stringLikeRegexp("AwsSolutions-.*"),
+      Match.stringLikeRegexp("AwsSolutions-.*")
     );
 
     generateNagReport(stack, errors, warnings);
@@ -738,7 +738,7 @@ describe("cdk-nag Compliance Checks - Network", () => {
   test("No unsuppressed Warnings", () => {
     const warnings = Annotations.fromStack(stack).findWarning(
       "*",
-      Match.stringLikeRegexp("AwsSolutions-.*"),
+      Match.stringLikeRegexp("AwsSolutions-.*")
     );
     expect(warnings).toHaveLength(0);
   });
@@ -746,7 +746,7 @@ describe("cdk-nag Compliance Checks - Network", () => {
   test("No unsuppressed Errors", () => {
     const errors = Annotations.fromStack(stack).findError(
       "*",
-      Match.stringLikeRegexp("AwsSolutions-.*"),
+      Match.stringLikeRegexp("AwsSolutions-.*")
     );
     expect(errors).toHaveLength(0);
   });

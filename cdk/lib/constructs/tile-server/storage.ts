@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Amazon.com, Inc. or its affiliates.
+ * Copyright 2025-2026 Amazon.com, Inc. or its affiliates.
  */
 
 import { RemovalPolicy } from "aws-cdk-lib";
@@ -9,7 +9,7 @@ import {
   FileSystem,
   LifecyclePolicy,
   PerformanceMode,
-  ThroughputMode,
+  ThroughputMode
 } from "aws-cdk-lib/aws-efs";
 import { AnyPrincipal, PolicyStatement } from "aws-cdk-lib/aws-iam";
 import { Construct } from "constructs";
@@ -58,9 +58,9 @@ export class Storage extends Construct {
       throughputMode: ThroughputMode.BURSTING,
       removalPolicy: props.removalPolicy,
       vpcSubnets: {
-        subnetType: SubnetType.PRIVATE_WITH_EGRESS,
+        subnetType: SubnetType.PRIVATE_WITH_EGRESS
       },
-      securityGroup: props.securityGroup,
+      securityGroup: props.securityGroup
     });
 
     fileSystem.addToResourcePolicy(
@@ -68,15 +68,15 @@ export class Storage extends Construct {
         actions: [
           "elasticfilesystem:ClientMount",
           "elasticfilesystem:ClientWrite",
-          "elasticfilesystem:ClientRootAccess",
+          "elasticfilesystem:ClientRootAccess"
         ],
         principals: [new AnyPrincipal()],
         conditions: {
           Bool: {
-            "elasticfilesystem:AccessedViaMountTarget": "true",
-          },
-        },
-      }),
+            "elasticfilesystem:AccessedViaMountTarget": "true"
+          }
+        }
+      })
     );
 
     return fileSystem;
@@ -88,12 +88,12 @@ export class Storage extends Construct {
       createAcl: {
         ownerGid: "1000",
         ownerUid: "1000",
-        permissions: "777",
+        permissions: "777"
       },
       posixUser: {
         uid: "1000",
-        gid: "1000",
-      },
+        gid: "1000"
+      }
     });
   }
 }

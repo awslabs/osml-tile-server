@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 Amazon.com, Inc. or its affiliates.
+ * Copyright 2023-2026 Amazon.com, Inc. or its affiliates.
  */
 
 /**
@@ -59,7 +59,7 @@ export class NetworkStack extends Stack {
       account: props.deployment.account,
       config: networkConfig,
       containerPort: containerPort,
-      vpc: props.vpc,
+      vpc: props.vpc
     });
   }
 }

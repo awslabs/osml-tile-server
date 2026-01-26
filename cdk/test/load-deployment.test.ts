@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Amazon.com, Inc. or its affiliates.
+ * Copyright 2025-2026 Amazon.com, Inc. or its affiliates.
  */
 
 /**
@@ -12,7 +12,7 @@ jest.mock("fs", () => {
   return {
     ...actualFs,
     existsSync: jest.fn(),
-    readFileSync: jest.fn(),
+    readFileSync: jest.fn()
   };
 });
 
@@ -37,8 +37,8 @@ describe("loadDeploymentConfig", () => {
       account: {
         id: "123456789012",
         region: "us-west-2",
-        prodLike: false,
-      },
+        prodLike: false
+      }
     };
 
     (readFileSync as jest.Mock).mockReturnValue(JSON.stringify(config));
@@ -73,8 +73,8 @@ describe("loadDeploymentConfig", () => {
       account: {
         id: "123456789012",
         region: "us-west-2",
-        prodLike: false,
-      },
+        prodLike: false
+      }
     };
 
     (readFileSync as jest.Mock).mockReturnValue(JSON.stringify(config));
@@ -90,8 +90,8 @@ describe("loadDeploymentConfig", () => {
       account: {
         id: "123456789012",
         region: "us-west-2",
-        prodLike: false,
-      },
+        prodLike: false
+      }
     };
 
     (readFileSync as jest.Mock).mockReturnValue(JSON.stringify(config));
@@ -106,8 +106,8 @@ describe("loadDeploymentConfig", () => {
       projectName: "test-project",
       account: {
         region: "us-west-2",
-        prodLike: false,
-      },
+        prodLike: false
+      }
     };
 
     (readFileSync as jest.Mock).mockReturnValue(JSON.stringify(config));
@@ -123,8 +123,8 @@ describe("loadDeploymentConfig", () => {
       account: {
         id: "12345",
         region: "us-west-2",
-        prodLike: false,
-      },
+        prodLike: false
+      }
     };
 
     (readFileSync as jest.Mock).mockReturnValue(JSON.stringify(config));
@@ -139,8 +139,8 @@ describe("loadDeploymentConfig", () => {
       projectName: "test-project",
       account: {
         id: "123456789012",
-        prodLike: false,
-      },
+        prodLike: false
+      }
     };
 
     (readFileSync as jest.Mock).mockReturnValue(JSON.stringify(config));
@@ -156,8 +156,8 @@ describe("loadDeploymentConfig", () => {
       account: {
         id: "123456789012",
         region: "invalid_region_123",
-        prodLike: false,
-      },
+        prodLike: false
+      }
     };
 
     (readFileSync as jest.Mock).mockReturnValue(JSON.stringify(config));
@@ -172,8 +172,8 @@ describe("loadDeploymentConfig", () => {
       projectName: "test-project",
       account: {
         id: "123456789012",
-        region: "us-west-2",
-      },
+        region: "us-west-2"
+      }
     };
 
     (readFileSync as jest.Mock).mockReturnValue(JSON.stringify(config));
@@ -190,8 +190,8 @@ describe("loadDeploymentConfig", () => {
         id: "123456789012",
         region: "us-west-2",
         prodLike: true,
-        isAdc: true,
-      },
+        isAdc: true
+      }
     };
 
     (readFileSync as jest.Mock).mockReturnValue(JSON.stringify(config));
@@ -208,8 +208,8 @@ describe("loadDeploymentConfig", () => {
       account: {
         id: "123456789012",
         region: "us-west-2",
-        prodLike: false,
-      },
+        prodLike: false
+      }
     };
 
     (readFileSync as jest.Mock).mockReturnValue(JSON.stringify(config));
@@ -225,11 +225,11 @@ describe("loadDeploymentConfig", () => {
       account: {
         id: "123456789012",
         region: "us-west-2",
-        prodLike: false,
+        prodLike: false
       },
       networkConfig: {
-        VPC_ID: "invalid-vpc-id",
-      },
+        VPC_ID: "invalid-vpc-id"
+      }
     };
 
     (readFileSync as jest.Mock).mockReturnValue(JSON.stringify(config));
@@ -245,11 +245,11 @@ describe("loadDeploymentConfig", () => {
       account: {
         id: "123456789012",
         region: "us-west-2",
-        prodLike: false,
+        prodLike: false
       },
       networkConfig: {
-        VPC_ID: "vpc-12345678",
-      },
+        VPC_ID: "vpc-12345678"
+      }
     };
 
     (readFileSync as jest.Mock).mockReturnValue(JSON.stringify(config));
@@ -265,12 +265,12 @@ describe("loadDeploymentConfig", () => {
       account: {
         id: "123456789012",
         region: "us-west-2",
-        prodLike: false,
+        prodLike: false
       },
       networkConfig: {
         VPC_ID: "vpc-12345678",
-        TARGET_SUBNETS: "not-an-array",
-      },
+        TARGET_SUBNETS: "not-an-array"
+      }
     };
 
     (readFileSync as jest.Mock).mockReturnValue(JSON.stringify(config));
@@ -286,12 +286,12 @@ describe("loadDeploymentConfig", () => {
       account: {
         id: "123456789012",
         region: "us-west-2",
-        prodLike: false,
+        prodLike: false
       },
       networkConfig: {
         VPC_ID: "vpc-12345678",
-        TARGET_SUBNETS: ["invalid-subnet-id"],
-      },
+        TARGET_SUBNETS: ["invalid-subnet-id"]
+      }
     };
 
     (readFileSync as jest.Mock).mockReturnValue(JSON.stringify(config));
@@ -307,13 +307,13 @@ describe("loadDeploymentConfig", () => {
       account: {
         id: "123456789012",
         region: "us-west-2",
-        prodLike: false,
+        prodLike: false
       },
       networkConfig: {
         VPC_ID: "vpc-12345678",
         TARGET_SUBNETS: ["subnet-12345678"],
-        SECURITY_GROUP_ID: "invalid-sg-id",
-      },
+        SECURITY_GROUP_ID: "invalid-sg-id"
+      }
     };
 
     (readFileSync as jest.Mock).mockReturnValue(JSON.stringify(config));
@@ -329,13 +329,13 @@ describe("loadDeploymentConfig", () => {
       account: {
         id: "123456789012",
         region: "us-west-2",
-        prodLike: false,
+        prodLike: false
       },
       networkConfig: {
         VPC_ID: "vpc-12345678",
         TARGET_SUBNETS: ["subnet-12345678", "subnet-87654321"],
-        SECURITY_GROUP_ID: "sg-12345678",
-      },
+        SECURITY_GROUP_ID: "sg-12345678"
+      }
     };
 
     (readFileSync as jest.Mock).mockReturnValue(JSON.stringify(config));
@@ -346,7 +346,7 @@ describe("loadDeploymentConfig", () => {
     expect(result.networkConfig?.VPC_ID).toBe("vpc-12345678");
     expect(result.networkConfig?.TARGET_SUBNETS).toEqual([
       "subnet-12345678",
-      "subnet-87654321",
+      "subnet-87654321"
     ]);
     expect(result.networkConfig?.SECURITY_GROUP_ID).toBe("sg-12345678");
   });
@@ -357,13 +357,13 @@ describe("loadDeploymentConfig", () => {
       account: {
         id: "123456789012",
         region: "us-west-2",
-        prodLike: false,
+        prodLike: false
       },
       networkConfig: {
         VPC_NAME: "custom-vpc",
         SECURITY_GROUP_NAME: "custom-sg",
-        MAX_AZS: 2,
-      },
+        MAX_AZS: 2
+      }
     };
 
     (readFileSync as jest.Mock).mockReturnValue(JSON.stringify(config));
@@ -382,13 +382,13 @@ describe("loadDeploymentConfig", () => {
       account: {
         id: "123456789012",
         region: "us-west-2",
-        prodLike: false,
+        prodLike: false
       },
       dataplaneConfig: {
         BUILD_FROM_SOURCE: true,
         ECS_TASK_CPU: 4096,
-        ECS_TASK_MEMORY: 8192,
-      },
+        ECS_TASK_MEMORY: 8192
+      }
     };
 
     (readFileSync as jest.Mock).mockReturnValue(JSON.stringify(config));
@@ -398,7 +398,7 @@ describe("loadDeploymentConfig", () => {
     expect(result.dataplaneConfig).toEqual({
       BUILD_FROM_SOURCE: true,
       ECS_TASK_CPU: 4096,
-      ECS_TASK_MEMORY: 8192,
+      ECS_TASK_MEMORY: 8192
     });
   });
 
@@ -408,8 +408,8 @@ describe("loadDeploymentConfig", () => {
       account: {
         id: "123456789012",
         region: "us-west-2",
-        prodLike: false,
-      },
+        prodLike: false
+      }
     };
 
     (readFileSync as jest.Mock).mockReturnValue(JSON.stringify(config));
@@ -425,9 +425,9 @@ describe("loadDeploymentConfig", () => {
       account: {
         id: "123456789012",
         region: "us-west-2",
-        prodLike: false,
+        prodLike: false
       },
-      deployIntegrationTests: false,
+      deployIntegrationTests: false
     };
 
     (readFileSync as jest.Mock).mockReturnValue(JSON.stringify(config));
@@ -443,12 +443,12 @@ describe("loadDeploymentConfig", () => {
       account: {
         id: "123456789012",
         region: "us-west-2",
-        prodLike: false,
+        prodLike: false
       },
       deployIntegrationTests: true,
       testImageryConfig: {
-        S3_IMAGE_BUCKET_PREFIX: "custom-test-imagery",
-      },
+        S3_IMAGE_BUCKET_PREFIX: "custom-test-imagery"
+      }
     };
 
     (readFileSync as jest.Mock).mockReturnValue(JSON.stringify(config));
@@ -457,7 +457,7 @@ describe("loadDeploymentConfig", () => {
 
     expect(result.testImageryConfig).toBeDefined();
     expect(result.testImageryConfig?.S3_IMAGE_BUCKET_PREFIX).toBe(
-      "custom-test-imagery",
+      "custom-test-imagery"
     );
   });
 
@@ -467,12 +467,12 @@ describe("loadDeploymentConfig", () => {
       account: {
         id: "123456789012",
         region: "us-west-2",
-        prodLike: false,
+        prodLike: false
       },
       deployIntegrationTests: false,
       testImageryConfig: {
-        S3_IMAGE_BUCKET_PREFIX: "custom-test-imagery",
-      },
+        S3_IMAGE_BUCKET_PREFIX: "custom-test-imagery"
+      }
     };
 
     (readFileSync as jest.Mock).mockReturnValue(JSON.stringify(config));
@@ -488,12 +488,12 @@ describe("loadDeploymentConfig", () => {
       account: {
         id: "123456789012",
         region: "us-west-2",
-        prodLike: false,
+        prodLike: false
       },
       deployIntegrationTests: true,
       testConfig: {
-        BUILD_FROM_SOURCE: true,
-      },
+        BUILD_FROM_SOURCE: true
+      }
     };
 
     (readFileSync as jest.Mock).mockReturnValue(JSON.stringify(config));
@@ -510,12 +510,12 @@ describe("loadDeploymentConfig", () => {
       account: {
         id: "123456789012",
         region: "us-west-2",
-        prodLike: false,
+        prodLike: false
       },
       deployIntegrationTests: false,
       testConfig: {
-        BUILD_FROM_SOURCE: true,
-      },
+        BUILD_FROM_SOURCE: true
+      }
     };
 
     (readFileSync as jest.Mock).mockReturnValue(JSON.stringify(config));
@@ -531,8 +531,8 @@ describe("loadDeploymentConfig", () => {
       account: {
         id: "  123456789012  ",
         region: "  us-west-2  ",
-        prodLike: false,
-      },
+        prodLike: false
+      }
     };
 
     (readFileSync as jest.Mock).mockReturnValue(JSON.stringify(config));
@@ -550,8 +550,8 @@ describe("loadDeploymentConfig", () => {
       account: {
         id: "123456789012",
         region: "us-west-2",
-        prodLike: false,
-      },
+        prodLike: false
+      }
     };
 
     (readFileSync as jest.Mock).mockReturnValue(JSON.stringify(config));
@@ -563,7 +563,7 @@ describe("loadDeploymentConfig", () => {
 
   test("validates account section exists", () => {
     const config = {
-      projectName: "test-project",
+      projectName: "test-project"
     };
 
     (readFileSync as jest.Mock).mockReturnValue(JSON.stringify(config));
@@ -587,12 +587,12 @@ describe("loadDeploymentConfig", () => {
       account: {
         id: "123456789012",
         region: "us-west-2",
-        prodLike: false,
+        prodLike: false
       },
       networkConfig: {
         VPC_ID: "vpc-12345678901234567",
-        TARGET_SUBNETS: ["subnet-12345678"],
-      },
+        TARGET_SUBNETS: ["subnet-12345678"]
+      }
     };
 
     (readFileSync as jest.Mock).mockReturnValue(JSON.stringify(config));
@@ -608,13 +608,13 @@ describe("loadDeploymentConfig", () => {
       account: {
         id: "123456789012",
         region: "us-west-2",
-        prodLike: false,
+        prodLike: false
       },
       networkConfig: {
         VPC_ID: "vpc-12345678",
         TARGET_SUBNETS: ["subnet-12345678"],
-        SECURITY_GROUP_ID: "sg-12345678901234567",
-      },
+        SECURITY_GROUP_ID: "sg-12345678901234567"
+      }
     };
 
     (readFileSync as jest.Mock).mockReturnValue(JSON.stringify(config));
@@ -622,7 +622,7 @@ describe("loadDeploymentConfig", () => {
     const result = loadDeploymentConfig();
 
     expect(result.networkConfig?.SECURITY_GROUP_ID).toBe(
-      "sg-12345678901234567",
+      "sg-12345678901234567"
     );
   });
 
@@ -632,12 +632,12 @@ describe("loadDeploymentConfig", () => {
       account: {
         id: "123456789012",
         region: "us-west-2",
-        prodLike: false,
+        prodLike: false
       },
       networkConfig: {
         VPC_ID: "vpc-12345678",
-        TARGET_SUBNETS: ["subnet-12345678901234567"],
-      },
+        TARGET_SUBNETS: ["subnet-12345678901234567"]
+      }
     };
 
     (readFileSync as jest.Mock).mockReturnValue(JSON.stringify(config));
@@ -645,7 +645,7 @@ describe("loadDeploymentConfig", () => {
     const result = loadDeploymentConfig();
 
     expect(result.networkConfig?.TARGET_SUBNETS).toEqual([
-      "subnet-12345678901234567",
+      "subnet-12345678901234567"
     ]);
   });
 
@@ -656,7 +656,7 @@ describe("loadDeploymentConfig", () => {
       "eu-west-1",
       "ap-southeast-2",
       "us-iso-east-1",
-      "us-isob-east-1",
+      "us-isob-east-1"
     ];
 
     for (const region of regions) {
@@ -665,8 +665,8 @@ describe("loadDeploymentConfig", () => {
         account: {
           id: "123456789012",
           region: region,
-          prodLike: false,
-        },
+          prodLike: false
+        }
       };
 
       (readFileSync as jest.Mock).mockReturnValue(JSON.stringify(config));
