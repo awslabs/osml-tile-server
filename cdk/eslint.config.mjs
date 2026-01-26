@@ -10,7 +10,7 @@ import globals from "globals";
 export default [
   // Global ignores
   {
-    ignores: ["node_modules/**", "cdk.out/**", "dist/**"],
+    ignores: ["node_modules/**", "cdk.out/**", "dist/**"]
   },
 
   js.configs.recommended,
@@ -23,14 +23,14 @@ export default [
       sourceType: "module",
       globals: {
         ...globals.node,
-        ...globals.es2020,
-      },
+        ...globals.es2020
+      }
     },
     plugins: {
       import: importPlugin,
       prettier: prettierPlugin,
       jest: jestPlugin,
-      "simple-import-sort": simpleImportSortPlugin,
+      "simple-import-sort": simpleImportSortPlugin
     },
     rules: {
       // Import rules
@@ -42,8 +42,8 @@ export default [
       "simple-import-sort/imports": "error",
 
       // Prettier
-      "prettier/prettier": "error",
-    },
+      "prettier/prettier": "error"
+    }
   },
 
   // Configuration for TypeScript files (with type checking)
@@ -54,20 +54,20 @@ export default [
       parserOptions: {
         project: "./tsconfig.json",
         ecmaVersion: 2020,
-        sourceType: "module",
+        sourceType: "module"
       },
       globals: {
         ...globals.node,
         ...globals.es2020,
-        ...globals.jest,
-      },
+        ...globals.jest
+      }
     },
     plugins: {
       "@typescript-eslint": tseslint,
       import: importPlugin,
       prettier: prettierPlugin,
       jest: jestPlugin,
-      "simple-import-sort": simpleImportSortPlugin,
+      "simple-import-sort": simpleImportSortPlugin
     },
     rules: {
       // Import rules
@@ -83,7 +83,7 @@ export default [
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-unused-expressions": [
         "error",
-        { allowTernary: true },
+        { allowTernary: true }
       ],
       "@typescript-eslint/no-unsafe-assignment": "warn",
       "@typescript-eslint/interface-name-prefix": "off",
@@ -101,14 +101,14 @@ export default [
       "prettier/prettier": "error",
 
       // Core rules
-      "require-await": "off",
+      "require-await": "off"
     },
     settings: {
       "import/resolver": {
         typescript: {
-          alwaysTryTypes: true,
-        },
-      },
-    },
-  },
+          alwaysTryTypes: true
+        }
+      }
+    }
+  }
 ];

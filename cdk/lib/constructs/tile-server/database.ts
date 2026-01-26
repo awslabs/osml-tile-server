@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 Amazon.com, Inc. or its affiliates.
+ * Copyright 2023-2026 Amazon.com, Inc. or its affiliates.
  */
 
 import { RemovalPolicy } from "aws-cdk-lib";
@@ -7,13 +7,13 @@ import {
   BackupPlan,
   BackupPlanRule,
   BackupResource,
-  BackupVault,
+  BackupVault
 } from "aws-cdk-lib/aws-backup";
 import {
   AttributeType,
   BillingMode,
   Table,
-  TableEncryption,
+  TableEncryption
 } from "aws-cdk-lib/aws-dynamodb";
 import { Construct } from "constructs";
 
@@ -72,12 +72,12 @@ export class DatabaseTables extends Construct {
       tableName: props.config.DDB_JOB_TABLE,
       partitionKey: {
         name: "viewpoint_id",
-        type: AttributeType.STRING,
+        type: AttributeType.STRING
       },
       billingMode: BillingMode.PAY_PER_REQUEST,
       removalPolicy: props.removalPolicy || RemovalPolicy.DESTROY,
       pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
-      encryption: TableEncryption.AWS_MANAGED,
+      encryption: TableEncryption.AWS_MANAGED
     });
 
     // Add TTL attribute
@@ -85,8 +85,8 @@ export class DatabaseTables extends Construct {
       indexName: "ttl-gsi",
       partitionKey: {
         name: props.config.DDB_TTL_ATTRIBUTE,
-        type: AttributeType.NUMBER,
-      },
+        type: AttributeType.NUMBER
+      }
     });
 
     return table;
@@ -99,7 +99,7 @@ export class DatabaseTables extends Construct {
    */
   private createBackupConfiguration(): void {
     const backupVault = new BackupVault(this, "TSBackupVault", {
-      backupVaultName: "TSBackupVault",
+      backupVaultName: "TSBackupVault"
     });
 
     const backupPlan = new BackupPlan(this, "TSBackupPlan");
@@ -107,7 +107,7 @@ export class DatabaseTables extends Construct {
     backupPlan.addRule(BackupPlanRule.monthly5Year(backupVault));
 
     backupPlan.addSelection("TSBackupSelection", {
-      resources: [BackupResource.fromDynamoDbTable(this.jobTable)],
+      resources: [BackupResource.fromDynamoDbTable(this.jobTable)]
     });
   }
 }

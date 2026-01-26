@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 Amazon.com, Inc. or its affiliates.
+ * Copyright 2023-2026 Amazon.com, Inc. or its affiliates.
  */
 
 import { RemovalPolicy } from "aws-cdk-lib";
@@ -173,7 +173,7 @@ export class DataplaneConfig extends BaseConfig {
       ECS_TASK_CPU: 8192,
       ECS_TASK_MEMORY: 16384,
       SQS_JOB_QUEUE: "TSJobQueue",
-      ...config,
+      ...config
     };
     super(mergedConfig);
 
@@ -342,10 +342,10 @@ export class Dataplane extends Construct {
         {
           id: "AwsSolutions-IAM5",
           reason:
-            "DynamoDB grantReadWriteData includes wildcard access to table indexes. The job table has a Global Secondary Index (ttl-gsi) that requires index access for query operations",
-        },
+            "DynamoDB grantReadWriteData includes wildcard access to table indexes. The job table has a Global Secondary Index (ttl-gsi) that requires index access for query operations"
+        }
       ],
-      true,
+      true
     );
 
     // Grant SQS permissions to specific job queue
@@ -360,7 +360,7 @@ export class Dataplane extends Construct {
 
     // Allow connections to the file system from the ECS cluster
     this.storage.fileSystem.connections.allowDefaultPortFrom(
-      this.ecsService.fargateService.service.connections,
+      this.ecsService.fargateService.service.connections
     );
   }
 
@@ -374,7 +374,7 @@ export class Dataplane extends Construct {
     return new DatabaseTables(this, "DatabaseTables", {
       account: props.account,
       config: this.config,
-      removalPolicy: this.removalPolicy,
+      removalPolicy: this.removalPolicy
     });
   }
 
@@ -387,7 +387,7 @@ export class Dataplane extends Construct {
   private createMessaging(props: DataplaneProps): Messaging {
     return new Messaging(this, "Messaging", {
       account: props.account,
-      config: this.config,
+      config: this.config
     });
   }
 
@@ -403,7 +403,7 @@ export class Dataplane extends Construct {
       vpc: props.vpc,
       config: this.config,
       removalPolicy: this.removalPolicy,
-      securityGroup: this.securityGroups ? this.securityGroups[0] : undefined,
+      securityGroup: this.securityGroups ? this.securityGroups[0] : undefined
     });
   }
 
@@ -420,7 +420,7 @@ export class Dataplane extends Construct {
           this,
           "ImportedEcsTaskRole",
           this.config.ECS_TASK_ROLE_NAME,
-          { mutable: false },
+          { mutable: false }
         )
       : undefined;
 
@@ -429,7 +429,7 @@ export class Dataplane extends Construct {
           this,
           "ImportedECSExecutionRole",
           this.config.ECS_EXECUTION_ROLE_NAME,
-          { mutable: false },
+          { mutable: false }
         )
       : undefined;
     return new ECSService(this, "ECSService", {
@@ -444,7 +444,7 @@ export class Dataplane extends Construct {
       jobTable: this.databaseTables.jobTable,
       jobQueue: this.messaging.jobQueue,
       fileSystem: this.storage.fileSystem,
-      accessPoint: this.storage.accessPoint,
+      accessPoint: this.storage.accessPoint
     });
   }
 
@@ -459,7 +459,7 @@ export class Dataplane extends Construct {
       return props.config;
     }
     return new DataplaneConfig(
-      (props.config as unknown as Partial<ConfigType>) ?? {},
+      (props.config as unknown as Partial<ConfigType>) ?? {}
     );
   }
 
@@ -492,15 +492,15 @@ export class Dataplane extends Construct {
    * @returns The security groups or undefined
    */
   private initializeSecurityGroups(
-    props: DataplaneProps,
+    props: DataplaneProps
   ): ISecurityGroup[] | undefined {
     if (this.config.SECURITY_GROUP_ID) {
       return [
         SecurityGroup.fromSecurityGroupId(
           this,
           "TSImportSecurityGroup",
-          this.config.SECURITY_GROUP_ID,
-        ),
+          this.config.SECURITY_GROUP_ID
+        )
       ];
     }
     if (props.securityGroup) {

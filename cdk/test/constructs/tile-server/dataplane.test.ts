@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 Amazon.com, Inc. or its affiliates.
+ * Copyright 2024-2026 Amazon.com, Inc. or its affiliates.
  */
 
 import { App, Aspects, RemovalPolicy, Stack } from "aws-cdk-lib";
@@ -9,18 +9,18 @@ import { AwsSolutionsChecks } from "cdk-nag";
 
 import {
   Dataplane,
-  DataplaneConfig,
+  DataplaneConfig
 } from "../../../lib/constructs/tile-server/dataplane";
 import { Network } from "../../../lib/constructs/tile-server/network";
 import {
   testAccount,
   testAdcAccount,
-  testProdAccount,
+  testProdAccount
 } from "../../test-account";
 import {
   CloudFormationResource,
   ECSEnvironmentVariable,
-  ECSTaskDefinitionProperties,
+  ECSTaskDefinitionProperties
 } from "../../test-types";
 import { generateNagReport } from "../../test-utils";
 
@@ -54,7 +54,7 @@ describe("DataplaneConfig", () => {
         CONTAINER_URI: "custom/tile-server:v1.0",
         ECS_TASK_CPU: 4096,
         ECS_TASK_MEMORY: 8192,
-        DDB_JOB_TABLE: "CustomJobTable",
+        DDB_JOB_TABLE: "CustomJobTable"
       };
 
       const config = new DataplaneConfig(customConfig);
@@ -74,13 +74,13 @@ describe("DataplaneConfig", () => {
       expect(() => {
         new DataplaneConfig({ ECS_TASK_CPU: 128 });
       }).toThrow(
-        "Configuration validation failed:\nECS_TASK_CPU must be at least 256 (0.25 vCPU)",
+        "Configuration validation failed:\nECS_TASK_CPU must be at least 256 (0.25 vCPU)"
       );
 
       expect(() => {
         new DataplaneConfig({ ECS_TASK_CPU: 32768 });
       }).toThrow(
-        "Configuration validation failed:\nECS_TASK_CPU must be at most 16384 (16 vCPU)",
+        "Configuration validation failed:\nECS_TASK_CPU must be at most 16384 (16 vCPU)"
       );
     });
 
@@ -88,13 +88,13 @@ describe("DataplaneConfig", () => {
       expect(() => {
         new DataplaneConfig({ ECS_TASK_MEMORY: 256 });
       }).toThrow(
-        "Configuration validation failed:\nECS_TASK_MEMORY must be at least 512 MiB",
+        "Configuration validation failed:\nECS_TASK_MEMORY must be at least 512 MiB"
       );
 
       expect(() => {
         new DataplaneConfig({ ECS_TASK_MEMORY: 200000 });
       }).toThrow(
-        "Configuration validation failed:\nECS_TASK_MEMORY must be at most 122880 MiB (120 GB)",
+        "Configuration validation failed:\nECS_TASK_MEMORY must be at most 122880 MiB (120 GB)"
       );
     });
 
@@ -102,10 +102,10 @@ describe("DataplaneConfig", () => {
       expect(() => {
         new DataplaneConfig({
           ECS_TASK_CPU: 128,
-          ECS_TASK_MEMORY: 256,
+          ECS_TASK_MEMORY: 256
         });
       }).toThrow(
-        "Configuration validation failed:\nECS_TASK_CPU must be at least 256 (0.25 vCPU)\nECS_TASK_MEMORY must be at least 512 MiB",
+        "Configuration validation failed:\nECS_TASK_CPU must be at least 256 (0.25 vCPU)\nECS_TASK_MEMORY must be at least 512 MiB"
       );
     });
 
@@ -113,14 +113,14 @@ describe("DataplaneConfig", () => {
       expect(() => {
         new DataplaneConfig({
           ECS_TASK_CPU: 1024,
-          ECS_TASK_MEMORY: 2048,
+          ECS_TASK_MEMORY: 2048
         });
       }).not.toThrow();
 
       expect(() => {
         new DataplaneConfig({
           ECS_TASK_CPU: 16384,
-          ECS_TASK_MEMORY: 122880,
+          ECS_TASK_MEMORY: 122880
         });
       }).not.toThrow();
     });
@@ -135,7 +135,7 @@ describe("Dataplane", () => {
   beforeEach(() => {
     app = new App();
     stack = new Stack(app, "TestStack", {
-      env: { account: testAccount.id, region: testAccount.region },
+      env: { account: testAccount.id, region: testAccount.region }
     });
     vpc = new Vpc(stack, "TestVpc");
   });
@@ -144,7 +144,7 @@ describe("Dataplane", () => {
     it("creates dataplane with default configuration", () => {
       const dataplane = new Dataplane(stack, "TestDataplane", {
         account: testAccount,
-        vpc: vpc,
+        vpc: vpc
       });
 
       expect(dataplane.config).toBeInstanceOf(DataplaneConfig);
@@ -159,13 +159,13 @@ describe("Dataplane", () => {
     it("creates dataplane with custom configuration", () => {
       const customConfig = new DataplaneConfig({
         DDB_JOB_TABLE: "CustomJobTable",
-        SQS_JOB_QUEUE: "CustomQueue",
+        SQS_JOB_QUEUE: "CustomQueue"
       });
 
       const dataplane = new Dataplane(stack, "TestDataplane", {
         account: testAccount,
         vpc: vpc,
-        config: customConfig,
+        config: customConfig
       });
 
       expect(dataplane.config).toBe(customConfig);
@@ -176,7 +176,7 @@ describe("Dataplane", () => {
     it("sets correct removal policy for production account", () => {
       const dataplane = new Dataplane(stack, "TestDataplane", {
         account: testProdAccount,
-        vpc: vpc,
+        vpc: vpc
       });
 
       expect(dataplane.removalPolicy).toBe(RemovalPolicy.RETAIN);
@@ -185,7 +185,7 @@ describe("Dataplane", () => {
     it("sets correct removal policy for non-production account", () => {
       const dataplane = new Dataplane(stack, "TestDataplane", {
         account: testAccount,
-        vpc: vpc,
+        vpc: vpc
       });
 
       expect(dataplane.removalPolicy).toBe(RemovalPolicy.DESTROY);
@@ -193,13 +193,13 @@ describe("Dataplane", () => {
 
     it("handles security group from config", () => {
       const config = new DataplaneConfig({
-        SECURITY_GROUP_ID: "sg-12345678",
+        SECURITY_GROUP_ID: "sg-12345678"
       });
 
       const dataplane = new Dataplane(stack, "TestDataplane", {
         account: testAccount,
         vpc: vpc,
-        config: config,
+        config: config
       });
 
       expect(dataplane.securityGroups).toBeDefined();
@@ -209,13 +209,13 @@ describe("Dataplane", () => {
     it("handles security group from props", () => {
       const securityGroup = new SecurityGroup(stack, "TestSecurityGroup", {
         vpc: vpc,
-        description: "Test security group",
+        description: "Test security group"
       });
 
       const dataplane = new Dataplane(stack, "TestDataplane", {
         account: testAccount,
         vpc: vpc,
-        securityGroup: securityGroup,
+        securityGroup: securityGroup
       });
 
       expect(dataplane.securityGroups).toBeDefined();
@@ -225,13 +225,13 @@ describe("Dataplane", () => {
 
     it("handles different regional configurations", () => {
       const eastStack = new Stack(app, "EastStack", {
-        env: { account: testAccount.id, region: "us-east-1" },
+        env: { account: testAccount.id, region: "us-east-1" }
       });
       const eastVpc = new Vpc(eastStack, "EastVpc");
 
       const dataplane = new Dataplane(eastStack, "TestDataplane", {
         account: { ...testAccount, region: "us-east-1" },
-        vpc: eastVpc,
+        vpc: eastVpc
       });
 
       expect(dataplane.regionalS3Endpoint).toBe("s3.amazonaws.com");
@@ -242,7 +242,7 @@ describe("Dataplane", () => {
     it("creates all required AWS resources", () => {
       new Dataplane(stack, "TestDataplane", {
         account: testAccount,
-        vpc: vpc,
+        vpc: vpc
       });
 
       const template = Template.fromStack(stack);
@@ -250,16 +250,16 @@ describe("Dataplane", () => {
       // Should create DynamoDB table
       template.hasResourceProperties("AWS::DynamoDB::Table", {
         TableName: "TSJobTable",
-        BillingMode: "PAY_PER_REQUEST",
+        BillingMode: "PAY_PER_REQUEST"
       });
 
       // Should create SQS queues
       template.hasResourceProperties("AWS::SQS::Queue", {
-        QueueName: "TSJobQueue",
+        QueueName: "TSJobQueue"
       });
 
       template.hasResourceProperties("AWS::SQS::Queue", {
-        QueueName: "TSJobQueue-dlq",
+        QueueName: "TSJobQueue-dlq"
       });
 
       // Should create EFS filesystem
@@ -267,7 +267,7 @@ describe("Dataplane", () => {
 
       // Should create ECS cluster
       template.hasResourceProperties("AWS::ECS::Cluster", {
-        ClusterName: "TSCluster",
+        ClusterName: "TSCluster"
       });
 
       // Should create ECS service
@@ -280,7 +280,7 @@ describe("Dataplane", () => {
     it("creates backup resources for production accounts", () => {
       new Dataplane(stack, "TestDataplane", {
         account: testProdAccount,
-        vpc: vpc,
+        vpc: vpc
       });
 
       const template = Template.fromStack(stack);
@@ -298,7 +298,7 @@ describe("Dataplane", () => {
     it("does not create backup resources for ADC accounts", () => {
       new Dataplane(stack, "TestDataplane", {
         account: testAdcAccount,
-        vpc: vpc,
+        vpc: vpc
       });
 
       const template = Template.fromStack(stack);
@@ -312,7 +312,7 @@ describe("Dataplane", () => {
     it("does not create backup resources for non-production accounts", () => {
       new Dataplane(stack, "TestDataplane", {
         account: testAccount,
-        vpc: vpc,
+        vpc: vpc
       });
 
       const template = Template.fromStack(stack);
@@ -328,7 +328,7 @@ describe("Dataplane", () => {
     it("grants specific resource permissions to ECS task role", () => {
       new Dataplane(stack, "TestDataplane", {
         account: testAccount,
-        vpc: vpc,
+        vpc: vpc
       });
 
       const template = Template.fromStack(stack);
@@ -340,7 +340,7 @@ describe("Dataplane", () => {
 
       // Verify task role has policies attached
       template.hasResourceProperties("AWS::IAM::Role", {
-        RoleName: "TileServerECSTaskRole",
+        RoleName: "TileServerECSTaskRole"
       });
     });
 
@@ -348,13 +348,13 @@ describe("Dataplane", () => {
       const config = new DataplaneConfig({
         DDB_JOB_TABLE: "CustomJobTable",
         SQS_JOB_QUEUE: "CustomQueue",
-        CW_LOGGROUP_NAME: "CustomLogGroup",
+        CW_LOGGROUP_NAME: "CustomLogGroup"
       });
 
       new Dataplane(stack, "TestDataplane", {
         account: testAccount,
         vpc: vpc,
-        config: config,
+        config: config
       });
 
       const template = Template.fromStack(stack);
@@ -364,10 +364,10 @@ describe("Dataplane", () => {
 
       // Verify key environment variables are present in the task definition
       const taskDefinitions = template.findResources(
-        "AWS::ECS::TaskDefinition",
+        "AWS::ECS::TaskDefinition"
       );
       const taskDefinition = Object.values(
-        taskDefinitions,
+        taskDefinitions
       )[0] as CloudFormationResource;
       const taskDefProps =
         taskDefinition.Properties as unknown as ECSTaskDefinitionProperties;
@@ -378,7 +378,7 @@ describe("Dataplane", () => {
 
       // Check that required environment variables exist
       const envVarNames = containerDef.Environment.map(
-        (env: ECSEnvironmentVariable) => env.Name,
+        (env: ECSEnvironmentVariable) => env.Name
       );
       expect(envVarNames).toContain("JOB_TABLE");
       expect(envVarNames).toContain("JOB_QUEUE");
@@ -394,17 +394,17 @@ describe("cdk-nag Compliance Checks - Dataplane", () => {
   beforeAll(() => {
     app = new App();
     stack = new Stack(app, "TestStack", {
-      env: { account: testAccount.id, region: testAccount.region },
+      env: { account: testAccount.id, region: testAccount.region }
     });
 
     // Use Network construct instead of raw VPC for compliance
     const network = new Network(stack, "TestNetwork", {
-      account: testAccount,
+      account: testAccount
     });
 
     new Dataplane(stack, "TestDataplane", {
       account: testAccount,
-      vpc: network.vpc,
+      vpc: network.vpc
     });
 
     // Add the cdk-nag AwsSolutions Pack with extra verbose logging enabled.
@@ -412,11 +412,11 @@ describe("cdk-nag Compliance Checks - Dataplane", () => {
 
     const errors = Annotations.fromStack(stack).findError(
       "*",
-      Match.stringLikeRegexp("AwsSolutions-.*"),
+      Match.stringLikeRegexp("AwsSolutions-.*")
     );
     const warnings = Annotations.fromStack(stack).findWarning(
       "*",
-      Match.stringLikeRegexp("AwsSolutions-.*"),
+      Match.stringLikeRegexp("AwsSolutions-.*")
     );
 
     generateNagReport(stack, errors, warnings);
@@ -425,7 +425,7 @@ describe("cdk-nag Compliance Checks - Dataplane", () => {
   test("No unsuppressed Warnings", () => {
     const warnings = Annotations.fromStack(stack).findWarning(
       "*",
-      Match.stringLikeRegexp("AwsSolutions-.*"),
+      Match.stringLikeRegexp("AwsSolutions-.*")
     );
     expect(warnings).toHaveLength(0);
   });
@@ -433,7 +433,7 @@ describe("cdk-nag Compliance Checks - Dataplane", () => {
   test("No unsuppressed Errors", () => {
     const errors = Annotations.fromStack(stack).findError(
       "*",
-      Match.stringLikeRegexp("AwsSolutions-.*"),
+      Match.stringLikeRegexp("AwsSolutions-.*")
     );
     expect(errors).toHaveLength(0);
   });

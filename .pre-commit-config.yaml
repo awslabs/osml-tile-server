@@ -117,15 +117,17 @@ repos:
         pass_filenames: false
 
       - id: eslint
-        name: ESLint
-        entry: bash -c 'cd cdk && npx eslint --fix --max-warnings 0 "**/*.{js,ts}"'
+        name: eslint
+        entry: bash -c 'cd cdk && npx eslint . --ext .ts,.tsx --fix --ignore-pattern "cdk.out/**"'
         language: system
-        files: ^cdk/.*\.(ts|tsx|js)$
+        files: ^cdk/.*\.(ts|tsx)$
+        exclude: ^cdk/cdk\.out
         types: [file]
 
       - id: prettier
-        name: Prettier
+        name: prettier
         entry: bash -c 'cd cdk && npx prettier --write .'
         language: system
         files: ^cdk/.*\.(ts|tsx|js|jsx|json|yml|yaml|md)$
+        exclude: ^cdk/cdk\.out
         types: [file]

@@ -1,8 +1,8 @@
 /*
- * Copyright 2023-2025 Amazon.com, Inc. or its affiliates.
+ * Copyright 2023-2026 Amazon.com, Inc. or its affiliates.
  */
 
-import { App, Environment, Stack, StackProps } from "aws-cdk-lib";
+import { App, CfnOutput, Environment, Stack, StackProps } from "aws-cdk-lib";
 import { ISecurityGroup, IVpc } from "aws-cdk-lib/aws-ec2";
 
 import { DeploymentConfig } from "../bin/deployment/load-deployment";
@@ -31,7 +31,7 @@ export class TileServerStack extends Stack {
   constructor(parent: App, name: string, props: TileServerStackProps) {
     super(parent, name, {
       terminationProtection: props.deployment.account.prodLike,
-      ...props,
+      ...props
     });
 
     // Store deployment config for use in other methods
@@ -48,11 +48,18 @@ export class TileServerStack extends Stack {
       account: this.deployment.account,
       vpc: this.vpc,
       securityGroup: props.securityGroup,
-      config: dataplaneConfig,
+      config: dataplaneConfig
     });
 
     // Expose the load balancer DNS name for cross-stack references
     this.loadBalancerDnsName =
       this.resources.ecsService.fargateService.loadBalancer.loadBalancerDnsName;
+
+    // Add CloudFormation output for the load balancer DNS name
+    new CfnOutput(this, "LoadBalancerDNS", {
+      value: this.loadBalancerDnsName,
+      description: "DNS name of the Tile Server Application Load Balancer",
+      exportName: `${this.deployment.projectName}-LoadBalancerDNS`
+    });
   }
 }

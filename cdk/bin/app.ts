@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /*
- * Copyright 2025 Amazon.com, Inc. or its affiliates.
+ * Copyright 2025-2026 Amazon.com, Inc. or its affiliates.
  */
 
 /**
@@ -45,10 +45,10 @@ const networkStack = new NetworkStack(
   {
     env: {
       account: deployment.account.id,
-      region: deployment.account.region,
+      region: deployment.account.region
     },
-    deployment: deployment,
-  },
+    deployment: deployment
+  }
 );
 
 // -----------------------------------------------------------------------------
@@ -61,14 +61,14 @@ const tileServerStack = new TileServerStack(
   {
     env: {
       account: deployment.account.id,
-      region: deployment.account.region,
+      region: deployment.account.region
     },
     deployment: deployment,
     vpc: networkStack.network.vpc,
     securityGroup: networkStack.network.securityGroup,
     description:
-      "TileServer, Guidance for Processing Overhead Imagery on AWS (SO9240)",
-  },
+      "TileServer, Guidance for Processing Overhead Imagery on AWS (SO9240)"
+  }
 );
 
 tileServerStack.node.addDependency(networkStack);
@@ -81,12 +81,12 @@ if (deployment.deployIntegrationTests) {
   const testStack = new TestStack(app, `${deployment.projectName}-Test`, {
     env: {
       account: deployment.account.id,
-      region: deployment.account.region,
+      region: deployment.account.region
     },
     deployment: deployment,
     vpc: networkStack.network.vpc,
     serviceEndpointDnsName: tileServerStack.loadBalancerDnsName,
-    securityGroup: networkStack.network.securityGroup,
+    securityGroup: networkStack.network.securityGroup
   });
   testStack.node.addDependency(tileServerStack);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 Amazon.com, Inc. or its affiliates.
+ * Copyright 2023-2026 Amazon.com, Inc. or its affiliates.
  */
 
 import { region_info } from "aws-cdk-lib";
@@ -11,7 +11,7 @@ import {
   ManagedPolicy,
   PolicyStatement,
   Role,
-  ServicePrincipal,
+  ServicePrincipal
 } from "aws-cdk-lib/aws-iam";
 import { NagSuppressions } from "cdk-nag";
 import { Construct } from "constructs";
@@ -63,7 +63,7 @@ export class ECSRoles extends Construct {
 
     this.partition = region_info.Fact.find(
       props.account.region,
-      region_info.FactName.PARTITION,
+      region_info.FactName.PARTITION
     )!;
 
     // Create or use existing task role
@@ -85,27 +85,27 @@ export class ECSRoles extends Construct {
       roleName: props.taskRoleName,
       assumedBy: new CompositePrincipal(
         new ServicePrincipal("ecs-tasks.amazonaws.com"),
-        new ServicePrincipal("lambda.amazonaws.com"),
+        new ServicePrincipal("lambda.amazonaws.com")
       ),
-      description: "Allows access necessary AWS services (SQS, DynamoDB, ...)",
+      description: "Allows access necessary AWS services (SQS, DynamoDB, ...)"
     });
 
     taskRole.assumeRolePolicy?.addStatements(
       new PolicyStatement({
         actions: ["sts:AssumeRole"],
-        principals: [new AccountPrincipal(props.account.id)],
-      }),
+        principals: [new AccountPrincipal(props.account.id)]
+      })
     );
 
     const taskPolicy = new ManagedPolicy(this, "TileServerEcsTaskPolicy", {
-      managedPolicyName: "TileServerEcsTaskPolicy",
+      managedPolicyName: "TileServerEcsTaskPolicy"
     });
 
     // Add permissions to assume roles for cross-account S3 access
     const stsPolicyStatement = new PolicyStatement({
       effect: Effect.ALLOW,
       actions: ["sts:AssumeRole"],
-      resources: ["*"],
+      resources: ["*"]
     });
 
     // S3 permissions - wildcard needed for user-provided imagery buckets
@@ -117,9 +117,9 @@ export class ECSRoles extends Construct {
         "s3:GetBucketLocation",
         "s3:GetObject",
         "s3:GetObjectAcl",
-        "s3:PutObject",
+        "s3:PutObject"
       ],
-      resources: [`arn:${this.partition}:s3:::*`],
+      resources: [`arn:${this.partition}:s3:::*`]
     });
 
     // KMS permissions - wildcard needed for encrypted S3 objects with various keys
@@ -127,22 +127,22 @@ export class ECSRoles extends Construct {
       effect: Effect.ALLOW,
       actions: ["kms:Decrypt", "kms:GenerateDataKey", "kms:Encrypt"],
       resources: [
-        `arn:${this.partition}:kms:${props.account.region}:${props.account.id}:key/*`,
-      ],
+        `arn:${this.partition}:kms:${props.account.region}:${props.account.id}:key/*`
+      ]
     });
 
     // CloudWatch DescribeAlarms for autoscaling - account-level operation
     const autoScalingCwPolicyStatement = new PolicyStatement({
       effect: Effect.ALLOW,
       actions: ["cloudwatch:DescribeAlarms"],
-      resources: [`*`],
+      resources: [`*`]
     });
 
     taskPolicy.addStatements(
       stsPolicyStatement,
       s3PolicyStatement,
       kmsPolicyStatement,
-      autoScalingCwPolicyStatement,
+      autoScalingCwPolicyStatement
     );
 
     taskRole.addManagedPolicy(taskPolicy);
@@ -158,11 +158,11 @@ export class ECSRoles extends Construct {
           appliesTo: [
             "Resource::*",
             `Resource::arn:${this.partition}:s3:::*`,
-            `Resource::arn:${this.partition}:kms:${props.account.region}:${props.account.id}:key/*`,
-          ],
-        },
+            `Resource::arn:${this.partition}:kms:${props.account.region}:${props.account.id}:key/*`
+          ]
+        }
       ],
-      true,
+      true
     );
 
     return taskRole;
@@ -178,21 +178,21 @@ export class ECSRoles extends Construct {
     const executionRole = new Role(this, "TileServerExecutionRole", {
       roleName: props.executionRoleName,
       assumedBy: new CompositePrincipal(
-        new ServicePrincipal("ecs-tasks.amazonaws.com"),
+        new ServicePrincipal("ecs-tasks.amazonaws.com")
       ),
       description:
-        "Allows the Oversight Tile Server to access necessary AWS services to boot up the ECS task...",
+        "Allows the Oversight Tile Server to access necessary AWS services to boot up the ECS task..."
     });
 
     const tsPolicy = new ManagedPolicy(this, "TileServerExecutionPolicy", {
-      managedPolicyName: "TileServerExecutionPolicy",
+      managedPolicyName: "TileServerExecutionPolicy"
     });
 
     // ECR GetAuthorizationToken - account-level operation, requires wildcard
     const ecrAuthPolicyStatement = new PolicyStatement({
       effect: Effect.ALLOW,
       actions: ["ecr:GetAuthorizationToken"],
-      resources: ["*"],
+      resources: ["*"]
     });
 
     // ECR repository access - wildcard needed for various container registries
@@ -202,11 +202,11 @@ export class ECSRoles extends Construct {
         "ecr:BatchCheckLayerAvailability",
         "ecr:GetDownloadUrlForLayer",
         "ecr:BatchGetImage",
-        "ecr:DescribeRepositories",
+        "ecr:DescribeRepositories"
       ],
       resources: [
-        `arn:${this.partition}:ecr:${props.account.region}:${props.account.id}:repository/*`,
-      ],
+        `arn:${this.partition}:ecr:${props.account.region}:${props.account.id}:repository/*`
+      ]
     });
 
     tsPolicy.addStatements(ecrAuthPolicyStatement, ecrPolicyStatement);
@@ -223,11 +223,11 @@ export class ECSRoles extends Construct {
             "Wildcard permissions required: (1) ECR GetAuthorizationToken is an account-level operation, (2) ECR repository access needed for pulling images from various repositories",
           appliesTo: [
             "Resource::*",
-            `Resource::arn:${this.partition}:ecr:${props.account.region}:${props.account.id}:repository/*`,
-          ],
-        },
+            `Resource::arn:${this.partition}:ecr:${props.account.region}:${props.account.id}:repository/*`
+          ]
+        }
       ],
-      true,
+      true
     );
 
     return executionRole;

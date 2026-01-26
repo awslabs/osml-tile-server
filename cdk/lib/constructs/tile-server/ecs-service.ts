@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 Amazon.com, Inc. or its affiliates.
+ * Copyright 2023-2026 Amazon.com, Inc. or its affiliates.
  */
 
 import { Duration, RemovalPolicy } from "aws-cdk-lib";
@@ -13,7 +13,7 @@ import {
   ContainerImage,
   ContainerInsights,
   FargateTaskDefinition,
-  Protocol,
+  Protocol
 } from "aws-cdk-lib/aws-ecs";
 import { ApplicationLoadBalancedFargateService } from "aws-cdk-lib/aws-ecs-patterns";
 import { IAccessPoint, IFileSystem } from "aws-cdk-lib/aws-efs";
@@ -139,7 +139,7 @@ export class ECSService extends Construct {
       taskRoleName: "TileServerECSTaskRole",
       executionRoleName: "TileServerECSExecutionRole",
       existingTaskRole: props.taskRole,
-      existingExecutionRole: props.executionRole,
+      existingExecutionRole: props.executionRole
     });
   }
 
@@ -153,7 +153,7 @@ export class ECSService extends Construct {
     return new LogGroup(this, "TSServiceLogGroup", {
       logGroupName: `/aws/OSML/${props.config.CW_LOGGROUP_NAME}`,
       retention: RetentionDays.TEN_YEARS,
-      removalPolicy: props.removalPolicy,
+      removalPolicy: props.removalPolicy
     });
   }
 
@@ -169,7 +169,7 @@ export class ECSService extends Construct {
       return ContainerImage.fromAsset(props.config.CONTAINER_BUILD_PATH, {
         target: props.config.CONTAINER_BUILD_TARGET,
         file: props.config.CONTAINER_DOCKERFILE,
-        platform: Platform.LINUX_AMD64,
+        platform: Platform.LINUX_AMD64
       });
     } else {
       // Use pre-built image from registry
@@ -189,7 +189,7 @@ export class ECSService extends Construct {
       vpc: props.vpc,
       containerInsightsV2: props.account.prodLike
         ? ContainerInsights.ENABLED
-        : ContainerInsights.ENHANCED,
+        : ContainerInsights.ENHANCED
     });
   }
 
@@ -214,11 +214,11 @@ export class ECSService extends Construct {
             transitEncryption: "ENABLED",
             authorizationConfig: {
               iam: "ENABLED",
-              accessPointId: props.accessPoint.accessPointId,
-            },
-          },
-        },
-      ],
+              accessPointId: props.accessPoint.accessPointId
+            }
+          }
+        }
+      ]
     });
 
     // Suppress ECS2 - environment variables contain non-sensitive configuration
@@ -228,10 +228,10 @@ export class ECSService extends Construct {
         {
           id: "AwsSolutions-ECS2",
           reason:
-            "Environment variables contain non-sensitive configuration values (AWS region, resource names, endpoints) that do not require AWS Secrets Manager",
-        },
+            "Environment variables contain non-sensitive configuration values (AWS region, resource names, endpoints) that do not require AWS Secrets Manager"
+        }
       ],
-      true,
+      true
     );
 
     return taskDefinition;
@@ -244,7 +244,7 @@ export class ECSService extends Construct {
    * @returns The created ContainerDefinition
    */
   private createContainerDefinition(
-    props: ECSServiceProps,
+    props: ECSServiceProps
   ): ContainerDefinition {
     const containerDefinition = this.taskDefinition.addContainer(
       "TSContainerDefinition",
@@ -259,30 +259,30 @@ export class ECSService extends Construct {
         disableNetworking: false,
         logging: new AwsLogDriver({
           logGroup: this.logGroup,
-          streamPrefix: props.config.CW_METRICS_NAMESPACE,
+          streamPrefix: props.config.CW_METRICS_NAMESPACE
         }),
         healthCheck: {
           command: [
-            `curl --fail http://localhost:${props.config.ECS_CONTAINER_PORT}/ping || exit 1`,
+            `curl --fail http://localhost:${props.config.ECS_CONTAINER_PORT}/ping || exit 1`
           ],
           interval: Duration.seconds(30),
           retries: 3,
-          timeout: Duration.seconds(10),
-        },
-      },
+          timeout: Duration.seconds(10)
+        }
+      }
     );
 
     // Add port mapping to container definition
     containerDefinition.addPortMappings({
       containerPort: props.config.ECS_CONTAINER_PORT,
-      protocol: Protocol.TCP,
+      protocol: Protocol.TCP
     });
 
     // Mount EFS to container
     containerDefinition.addMountPoints({
       sourceVolume: props.config.EFS_MOUNT_NAME,
       containerPath: `/${props.config.EFS_MOUNT_NAME}`,
-      readOnly: false,
+      readOnly: false
     });
 
     return containerDefinition;
@@ -299,7 +299,7 @@ export class ECSService extends Construct {
     const albLogsBucket = new Bucket(this, "ALBLogsBucket", {
       removalPolicy: props.removalPolicy,
       autoDeleteObjects: props.removalPolicy === RemovalPolicy.DESTROY,
-      enforceSSL: true,
+      enforceSSL: true
     });
 
     // Suppress S1 for ALB logs bucket - access logging bucket cannot log to itself
@@ -309,10 +309,10 @@ export class ECSService extends Construct {
         {
           id: "AwsSolutions-S1",
           reason:
-            "ALB access logs bucket does not require its own access logs to avoid infinite logging loop",
-        },
+            "ALB access logs bucket does not require its own access logs to avoid infinite logging loop"
+        }
       ],
-      true,
+      true
     );
 
     const alb = new ApplicationLoadBalancer(
@@ -321,13 +321,13 @@ export class ECSService extends Construct {
       {
         vpc: props.vpc,
         vpcSubnets: {
-          subnetType: SubnetType.PRIVATE_WITH_EGRESS,
+          subnetType: SubnetType.PRIVATE_WITH_EGRESS
         },
         securityGroup: props.securityGroups
           ? props.securityGroups[0]
           : undefined,
-        internetFacing: false,
-      },
+        internetFacing: false
+      }
     );
 
     // Enable ALB access logs
@@ -342,10 +342,10 @@ export class ECSService extends Construct {
         {
           id: "AwsSolutions-EC23",
           reason:
-            "Internal ALB security group allows VPC-scoped access. The ALB is not internet-facing (internetFacing: false)",
-        },
+            "Internal ALB security group allows VPC-scoped access. The ALB is not internet-facing (internetFacing: false)"
+        }
       ],
-      true,
+      true
     );
 
     return alb;
@@ -358,7 +358,7 @@ export class ECSService extends Construct {
    * @returns The created FargateService
    */
   private createFargateService(
-    props: ECSServiceProps,
+    props: ECSServiceProps
   ): ApplicationLoadBalancedFargateService {
     const fargateService = new ApplicationLoadBalancedFargateService(
       this,
@@ -369,11 +369,11 @@ export class ECSService extends Construct {
         minHealthyPercent: 100,
         securityGroups: props.securityGroups ? props.securityGroups : [],
         taskSubnets: {
-          subnetType: SubnetType.PRIVATE_WITH_EGRESS,
+          subnetType: SubnetType.PRIVATE_WITH_EGRESS
         },
         assignPublicIp: false,
-        loadBalancer: this.alb,
-      },
+        loadBalancer: this.alb
+      }
     );
 
     fargateService.targetGroup.configureHealthCheck({
@@ -383,7 +383,7 @@ export class ECSService extends Construct {
       healthyThresholdCount: 5,
       unhealthyThresholdCount: 2,
       timeout: Duration.seconds(5),
-      interval: Duration.seconds(30),
+      interval: Duration.seconds(30)
     });
 
     return fargateService;
@@ -406,8 +406,8 @@ export class ECSService extends Construct {
       EFS_MOUNT_NAME: props.config.EFS_MOUNT_NAME,
       STS_ARN: this.ecsRoles.taskRole.roleArn,
       ...(props.config.FASTAPI_ROOT_PATH !== undefined && {
-        FASTAPI_ROOT_PATH: props.config.FASTAPI_ROOT_PATH,
-      }),
+        FASTAPI_ROOT_PATH: props.config.FASTAPI_ROOT_PATH
+      })
     };
   }
 }

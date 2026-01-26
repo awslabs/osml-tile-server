@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 Amazon.com, Inc. or its affiliates.
+ * Copyright 2024-2026 Amazon.com, Inc. or its affiliates.
  */
 
 import { App, Aspects, RemovalPolicy, Stack } from "aws-cdk-lib";
@@ -32,20 +32,20 @@ describe("ECSService", () => {
   beforeEach(() => {
     app = new App();
     stack = new Stack(app, "TestStack", {
-      env: { account: testAccount.id, region: testAccount.region },
+      env: { account: testAccount.id, region: testAccount.region }
     });
     vpc = new Vpc(stack, "TestVpc");
     config = new DataplaneConfig();
 
     // Create required resources
     jobTable = new Table(stack, "TestJobTable", {
-      partitionKey: { name: "id", type: AttributeType.STRING },
+      partitionKey: { name: "id", type: AttributeType.STRING }
     });
 
     jobQueue = new Queue(stack, "TestJobQueue");
 
     fileSystem = new FileSystem(stack, "TestFileSystem", {
-      vpc: vpc,
+      vpc: vpc
     });
 
     accessPoint = fileSystem.addAccessPoint("TestAccessPoint");
@@ -62,7 +62,7 @@ describe("ECSService", () => {
         jobTable: jobTable,
         jobQueue: jobQueue,
         fileSystem: fileSystem,
-        accessPoint: accessPoint,
+        accessPoint: accessPoint
       });
 
       expect(ecsService.cluster).toBeDefined();
@@ -79,7 +79,7 @@ describe("ECSService", () => {
       const customConfig = new DataplaneConfig({
         ECS_CLUSTER_NAME: "CustomCluster",
         ECS_CONTAINER_NAME: "CustomContainer",
-        CONTAINER_URI: "custom/image:latest",
+        CONTAINER_URI: "custom/image:latest"
       });
 
       const ecsService = new ECSService(stack, "TestECSService", {
@@ -91,7 +91,7 @@ describe("ECSService", () => {
         jobTable: jobTable,
         jobQueue: jobQueue,
         fileSystem: fileSystem,
-        accessPoint: accessPoint,
+        accessPoint: accessPoint
       });
 
       expect(ecsService.cluster).toBeDefined();
@@ -110,7 +110,7 @@ describe("ECSService", () => {
         jobTable: jobTable,
         jobQueue: jobQueue,
         fileSystem: fileSystem,
-        accessPoint: accessPoint,
+        accessPoint: accessPoint
       });
 
       const template = Template.fromStack(stack);
@@ -120,9 +120,9 @@ describe("ECSService", () => {
         ClusterSettings: [
           {
             Name: "containerInsights",
-            Value: "enhanced",
-          },
-        ],
+            Value: "enhanced"
+          }
+        ]
       });
     });
 
@@ -136,7 +136,7 @@ describe("ECSService", () => {
         jobTable: jobTable,
         jobQueue: jobQueue,
         fileSystem: fileSystem,
-        accessPoint: accessPoint,
+        accessPoint: accessPoint
       });
 
       const template = Template.fromStack(stack);
@@ -145,9 +145,9 @@ describe("ECSService", () => {
         ClusterSettings: [
           {
             Name: "containerInsights",
-            Value: "enabled",
-          },
-        ],
+            Value: "enabled"
+          }
+        ]
       });
     });
   });
@@ -163,7 +163,7 @@ describe("ECSService", () => {
         jobTable: jobTable,
         jobQueue: jobQueue,
         fileSystem: fileSystem,
-        accessPoint: accessPoint,
+        accessPoint: accessPoint
       });
 
       const template = Template.fromStack(stack);
@@ -174,8 +174,8 @@ describe("ECSService", () => {
         NetworkMode: "awsvpc",
         RequiresCompatibilities: ["FARGATE"],
         EphemeralStorage: {
-          SizeInGiB: 21,
-        },
+          SizeInGiB: 21
+        }
       });
     });
 
@@ -189,14 +189,14 @@ describe("ECSService", () => {
         jobTable: jobTable,
         jobQueue: jobQueue,
         fileSystem: fileSystem,
-        accessPoint: accessPoint,
+        accessPoint: accessPoint
       });
 
       const template = Template.fromStack(stack);
 
       // Verify EFS volume configuration exists
       const taskDefinitions = template.findResources(
-        "AWS::ECS::TaskDefinition",
+        "AWS::ECS::TaskDefinition"
       );
       const taskDefinition = Object.values(taskDefinitions)[0] as unknown;
 
@@ -227,14 +227,14 @@ describe("ECSService", () => {
         jobTable: jobTable,
         jobQueue: jobQueue,
         fileSystem: fileSystem,
-        accessPoint: accessPoint,
+        accessPoint: accessPoint
       });
 
       const template = Template.fromStack(stack);
 
       // Should have task definition with role ARNs
       const taskDefinitions = template.findResources(
-        "AWS::ECS::TaskDefinition",
+        "AWS::ECS::TaskDefinition"
       );
       const taskDefinition = Object.values(taskDefinitions)[0] as unknown;
       const taskDef = taskDefinition as {
@@ -257,7 +257,7 @@ describe("ECSService", () => {
         jobTable: jobTable,
         jobQueue: jobQueue,
         fileSystem: fileSystem,
-        accessPoint: accessPoint,
+        accessPoint: accessPoint
       });
 
       const template = Template.fromStack(stack);
@@ -272,9 +272,9 @@ describe("ECSService", () => {
             Essential: true,
             DisableNetworking: false,
             StartTimeout: 60,
-            StopTimeout: 60,
-          },
-        ],
+            StopTimeout: 60
+          }
+        ]
       });
     });
 
@@ -288,14 +288,14 @@ describe("ECSService", () => {
         jobTable: jobTable,
         jobQueue: jobQueue,
         fileSystem: fileSystem,
-        accessPoint: accessPoint,
+        accessPoint: accessPoint
       });
 
       const template = Template.fromStack(stack);
 
       // Verify environment variables are set
       const taskDefinitions = template.findResources(
-        "AWS::ECS::TaskDefinition",
+        "AWS::ECS::TaskDefinition"
       );
       const taskDefinition = Object.values(taskDefinitions)[0] as unknown;
       const taskDef = taskDefinition as {
@@ -306,7 +306,7 @@ describe("ECSService", () => {
       const containerDef = taskDef.Properties.ContainerDefinitions[0];
 
       const envVarNames = containerDef.Environment.map(
-        (env: { Name: string }) => env.Name,
+        (env: { Name: string }) => env.Name
       );
       expect(envVarNames).toContain("AWS_DEFAULT_REGION");
       expect(envVarNames).toContain("JOB_TABLE");
@@ -318,7 +318,7 @@ describe("ECSService", () => {
 
     it("includes FASTAPI_ROOT_PATH when configured", () => {
       const customConfig = new DataplaneConfig({
-        FASTAPI_ROOT_PATH: "/api/v1",
+        FASTAPI_ROOT_PATH: "/api/v1"
       });
 
       new ECSService(stack, "TestECSService", {
@@ -330,13 +330,13 @@ describe("ECSService", () => {
         jobTable: jobTable,
         jobQueue: jobQueue,
         fileSystem: fileSystem,
-        accessPoint: accessPoint,
+        accessPoint: accessPoint
       });
 
       const template = Template.fromStack(stack);
 
       const taskDefinitions = template.findResources(
-        "AWS::ECS::TaskDefinition",
+        "AWS::ECS::TaskDefinition"
       );
       const taskDefinition = Object.values(taskDefinitions)[0] as unknown;
       const taskDef = taskDefinition as {
@@ -347,7 +347,7 @@ describe("ECSService", () => {
       const containerDef = taskDef.Properties.ContainerDefinitions[0];
 
       const envVarNames = containerDef.Environment.map(
-        (env: { Name: string }) => env.Name,
+        (env: { Name: string }) => env.Name
       );
       expect(envVarNames).toContain("FASTAPI_ROOT_PATH");
     });
@@ -362,7 +362,7 @@ describe("ECSService", () => {
         jobTable: jobTable,
         jobQueue: jobQueue,
         fileSystem: fileSystem,
-        accessPoint: accessPoint,
+        accessPoint: accessPoint
       });
 
       const template = Template.fromStack(stack);
@@ -373,14 +373,14 @@ describe("ECSService", () => {
             HealthCheck: {
               Command: [
                 "CMD-SHELL",
-                "curl --fail http://localhost:8080/ping || exit 1",
+                "curl --fail http://localhost:8080/ping || exit 1"
               ],
               Interval: 30,
               Retries: 3,
-              Timeout: 10,
-            },
-          },
-        ],
+              Timeout: 10
+            }
+          }
+        ]
       });
     });
 
@@ -394,7 +394,7 @@ describe("ECSService", () => {
         jobTable: jobTable,
         jobQueue: jobQueue,
         fileSystem: fileSystem,
-        accessPoint: accessPoint,
+        accessPoint: accessPoint
       });
 
       const template = Template.fromStack(stack);
@@ -405,11 +405,11 @@ describe("ECSService", () => {
             PortMappings: [
               {
                 ContainerPort: 8080,
-                Protocol: "tcp",
-              },
-            ],
-          },
-        ],
+                Protocol: "tcp"
+              }
+            ]
+          }
+        ]
       });
     });
 
@@ -423,7 +423,7 @@ describe("ECSService", () => {
         jobTable: jobTable,
         jobQueue: jobQueue,
         fileSystem: fileSystem,
-        accessPoint: accessPoint,
+        accessPoint: accessPoint
       });
 
       const template = Template.fromStack(stack);
@@ -435,11 +435,11 @@ describe("ECSService", () => {
               {
                 SourceVolume: "ts-efs-volume",
                 ContainerPath: "/ts-efs-volume",
-                ReadOnly: false,
-              },
-            ],
-          },
-        ],
+                ReadOnly: false
+              }
+            ]
+          }
+        ]
       });
     });
   });
@@ -455,14 +455,14 @@ describe("ECSService", () => {
         jobTable: jobTable,
         jobQueue: jobQueue,
         fileSystem: fileSystem,
-        accessPoint: accessPoint,
+        accessPoint: accessPoint
       });
 
       const template = Template.fromStack(stack);
 
       template.hasResourceProperties("AWS::Logs::LogGroup", {
         LogGroupName: "/aws/OSML/TSService",
-        RetentionInDays: 3653, // 10 years
+        RetentionInDays: 3653 // 10 years
       });
     });
 
@@ -476,13 +476,13 @@ describe("ECSService", () => {
         jobTable: jobTable,
         jobQueue: jobQueue,
         fileSystem: fileSystem,
-        accessPoint: accessPoint,
+        accessPoint: accessPoint
       });
 
       const template = Template.fromStack(stack);
 
       template.hasResource("AWS::Logs::LogGroup", {
-        DeletionPolicy: "Retain",
+        DeletionPolicy: "Retain"
       });
     });
   });
@@ -498,7 +498,7 @@ describe("ECSService", () => {
         jobTable: jobTable,
         jobQueue: jobQueue,
         fileSystem: fileSystem,
-        accessPoint: accessPoint,
+        accessPoint: accessPoint
       });
 
       const template = Template.fromStack(stack);
@@ -506,15 +506,15 @@ describe("ECSService", () => {
       template.hasResourceProperties("AWS::ECS::TaskDefinition", {
         ContainerDefinitions: [
           {
-            Image: "awsosml/osml-tile-server:latest",
-          },
-        ],
+            Image: "awsosml/osml-tile-server:latest"
+          }
+        ]
       });
     });
 
     it("handles custom container URI", () => {
       const customConfig = new DataplaneConfig({
-        CONTAINER_URI: "custom/my-tile-server:v2.0",
+        CONTAINER_URI: "custom/my-tile-server:v2.0"
       });
 
       new ECSService(stack, "TestECSService", {
@@ -526,7 +526,7 @@ describe("ECSService", () => {
         jobTable: jobTable,
         jobQueue: jobQueue,
         fileSystem: fileSystem,
-        accessPoint: accessPoint,
+        accessPoint: accessPoint
       });
 
       const template = Template.fromStack(stack);
@@ -534,9 +534,9 @@ describe("ECSService", () => {
       template.hasResourceProperties("AWS::ECS::TaskDefinition", {
         ContainerDefinitions: [
           {
-            Image: "custom/my-tile-server:v2.0",
-          },
-        ],
+            Image: "custom/my-tile-server:v2.0"
+          }
+        ]
       });
     });
   });
@@ -552,7 +552,7 @@ describe("ECSService", () => {
         jobTable: jobTable,
         jobQueue: jobQueue,
         fileSystem: fileSystem,
-        accessPoint: accessPoint,
+        accessPoint: accessPoint
       });
 
       const template = Template.fromStack(stack);
@@ -561,15 +561,15 @@ describe("ECSService", () => {
         "AWS::ElasticLoadBalancingV2::LoadBalancer",
         {
           Type: "application",
-          Scheme: "internal",
-        },
+          Scheme: "internal"
+        }
       );
     });
 
     it("uses security group when provided", () => {
       const securityGroup = new SecurityGroup(stack, "TestSecurityGroup", {
         vpc: vpc,
-        description: "Test security group",
+        description: "Test security group"
       });
 
       new ECSService(stack, "TestECSService", {
@@ -582,14 +582,14 @@ describe("ECSService", () => {
         jobTable: jobTable,
         jobQueue: jobQueue,
         fileSystem: fileSystem,
-        accessPoint: accessPoint,
+        accessPoint: accessPoint
       });
 
       const template = Template.fromStack(stack);
 
       // Should create ALB with security groups
       const albs = template.findResources(
-        "AWS::ElasticLoadBalancingV2::LoadBalancer",
+        "AWS::ElasticLoadBalancingV2::LoadBalancer"
       );
       const alb = Object.values(albs)[0] as unknown;
       const albProps = alb as { Properties: { SecurityGroups: unknown[] } };
@@ -610,7 +610,7 @@ describe("ECSService", () => {
         jobTable: jobTable,
         jobQueue: jobQueue,
         fileSystem: fileSystem,
-        accessPoint: accessPoint,
+        accessPoint: accessPoint
       });
 
       const template = Template.fromStack(stack);
@@ -637,18 +637,17 @@ describe("ECSService", () => {
       expect(serviceProps.Properties.LaunchType).toBe("FARGATE");
       expect(
         serviceProps.Properties.NetworkConfiguration.AwsvpcConfiguration
-          .AssignPublicIp,
+          .AssignPublicIp
       ).toBe("DISABLED");
       expect(
         serviceProps.Properties.NetworkConfiguration.AwsvpcConfiguration
-          .SecurityGroups,
+          .SecurityGroups
       ).toBeDefined();
       expect(
-        serviceProps.Properties.NetworkConfiguration.AwsvpcConfiguration
-          .Subnets,
+        serviceProps.Properties.NetworkConfiguration.AwsvpcConfiguration.Subnets
       ).toBeDefined();
       expect(
-        serviceProps.Properties.DeploymentConfiguration.MinimumHealthyPercent,
+        serviceProps.Properties.DeploymentConfiguration.MinimumHealthyPercent
       ).toBe(100);
     });
 
@@ -662,7 +661,7 @@ describe("ECSService", () => {
         jobTable: jobTable,
         jobQueue: jobQueue,
         fileSystem: fileSystem,
-        accessPoint: accessPoint,
+        accessPoint: accessPoint
       });
 
       const template = Template.fromStack(stack);
@@ -676,8 +675,8 @@ describe("ECSService", () => {
           HealthyThresholdCount: 5,
           UnhealthyThresholdCount: 2,
           HealthCheckTimeoutSeconds: 5,
-          HealthCheckIntervalSeconds: 30,
-        },
+          HealthCheckIntervalSeconds: 30
+        }
       );
     });
   });
@@ -693,14 +692,14 @@ describe("ECSService", () => {
         jobTable: jobTable,
         jobQueue: jobQueue,
         fileSystem: fileSystem,
-        accessPoint: accessPoint,
+        accessPoint: accessPoint
       });
 
       const template = Template.fromStack(stack);
 
       // Verify logging configuration exists
       const taskDefinitions = template.findResources(
-        "AWS::ECS::TaskDefinition",
+        "AWS::ECS::TaskDefinition"
       );
       const taskDefinition = Object.values(taskDefinitions)[0] as unknown;
       const taskDef = taskDefinition as {
@@ -718,10 +717,10 @@ describe("ECSService", () => {
       expect(containerDef.LogConfiguration).toBeDefined();
       expect(containerDef.LogConfiguration.LogDriver).toBe("awslogs");
       expect(
-        containerDef.LogConfiguration.Options["awslogs-stream-prefix"],
+        containerDef.LogConfiguration.Options["awslogs-stream-prefix"]
       ).toBe("OSML");
       expect(containerDef.LogConfiguration.Options["awslogs-region"]).toBe(
-        "us-west-2",
+        "us-west-2"
       );
     });
   });
@@ -732,7 +731,7 @@ describe("ECSService", () => {
         ECS_TASK_CPU: 4096,
         ECS_TASK_MEMORY: 8192,
         ECS_CONTAINER_CPU: 4096,
-        ECS_CONTAINER_MEMORY: 8192,
+        ECS_CONTAINER_MEMORY: 8192
       });
 
       new ECSService(stack, "TestECSService", {
@@ -744,7 +743,7 @@ describe("ECSService", () => {
         jobTable: jobTable,
         jobQueue: jobQueue,
         fileSystem: fileSystem,
-        accessPoint: accessPoint,
+        accessPoint: accessPoint
       });
 
       const template = Template.fromStack(stack);
@@ -756,9 +755,9 @@ describe("ECSService", () => {
         ContainerDefinitions: [
           {
             Cpu: 4096,
-            Memory: 8192,
-          },
-        ],
+            Memory: 8192
+          }
+        ]
       });
     });
 
@@ -772,7 +771,7 @@ describe("ECSService", () => {
         jobTable: jobTable,
         jobQueue: jobQueue,
         fileSystem: fileSystem,
-        accessPoint: accessPoint,
+        accessPoint: accessPoint
       });
 
       const template = Template.fromStack(stack);
@@ -811,32 +810,32 @@ describe("cdk-nag Compliance Checks - ECSService", () => {
   beforeAll(() => {
     app = new App();
     stack = new Stack(app, "TestStack", {
-      env: { account: testAccount.id, region: testAccount.region },
+      env: { account: testAccount.id, region: testAccount.region }
     });
 
     const config = new DataplaneConfig();
 
     // Use proper constructs for compliance testing
     const network = new Network(stack, "TestNetwork", {
-      account: testAccount,
+      account: testAccount
     });
 
     const databaseTables = new DatabaseTables(stack, "TestDatabaseTables", {
       account: testAccount,
       config: config,
-      removalPolicy: RemovalPolicy.DESTROY,
+      removalPolicy: RemovalPolicy.DESTROY
     });
 
     const messaging = new Messaging(stack, "TestMessaging", {
       account: testAccount,
-      config: config,
+      config: config
     });
 
     const storage = new Storage(stack, "TestStorage", {
       account: testAccount,
       vpc: network.vpc,
       config: config,
-      removalPolicy: RemovalPolicy.DESTROY,
+      removalPolicy: RemovalPolicy.DESTROY
     });
 
     new ECSService(stack, "TestECSService", {
@@ -848,7 +847,7 @@ describe("cdk-nag Compliance Checks - ECSService", () => {
       jobTable: databaseTables.jobTable,
       jobQueue: messaging.jobQueue,
       fileSystem: storage.fileSystem,
-      accessPoint: storage.accessPoint,
+      accessPoint: storage.accessPoint
     });
 
     // Add the cdk-nag AwsSolutions Pack with extra verbose logging enabled.
@@ -856,11 +855,11 @@ describe("cdk-nag Compliance Checks - ECSService", () => {
 
     const errors = Annotations.fromStack(stack).findError(
       "*",
-      Match.stringLikeRegexp("AwsSolutions-.*"),
+      Match.stringLikeRegexp("AwsSolutions-.*")
     );
     const warnings = Annotations.fromStack(stack).findWarning(
       "*",
-      Match.stringLikeRegexp("AwsSolutions-.*"),
+      Match.stringLikeRegexp("AwsSolutions-.*")
     );
 
     generateNagReport(stack, errors, warnings);
@@ -869,7 +868,7 @@ describe("cdk-nag Compliance Checks - ECSService", () => {
   test("No unsuppressed Warnings", () => {
     const warnings = Annotations.fromStack(stack).findWarning(
       "*",
-      Match.stringLikeRegexp("AwsSolutions-.*"),
+      Match.stringLikeRegexp("AwsSolutions-.*")
     );
     expect(warnings).toHaveLength(0);
   });
@@ -877,7 +876,7 @@ describe("cdk-nag Compliance Checks - ECSService", () => {
   test("No unsuppressed Errors", () => {
     const errors = Annotations.fromStack(stack).findError(
       "*",
-      Match.stringLikeRegexp("AwsSolutions-.*"),
+      Match.stringLikeRegexp("AwsSolutions-.*")
     );
     expect(errors).toHaveLength(0);
   });

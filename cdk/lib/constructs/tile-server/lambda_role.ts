@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 Amazon.com, Inc. or its affiliates.
+ * Copyright 2023-2026 Amazon.com, Inc. or its affiliates.
  */
 
 import { region_info } from "aws-cdk-lib";
@@ -10,7 +10,7 @@ import {
   ManagedPolicy,
   PolicyStatement,
   Role,
-  ServicePrincipal,
+  ServicePrincipal
 } from "aws-cdk-lib/aws-iam";
 import { Construct } from "constructs";
 
@@ -64,21 +64,21 @@ export class TSLambdaRole extends Construct {
     // Determine the AWS partition based on the provided AWS region
     this.partition = region_info.Fact.find(
       props.account.region,
-      region_info.FactName.PARTITION,
+      region_info.FactName.PARTITION
     )!;
 
     // Create an AWS IAM role for the Tile Server Lambda Sweeper Function
     const tsLambdaRole = new Role(this, "TSLambdaRole", {
       roleName: props.roleName,
       assumedBy: new CompositePrincipal(
-        new ServicePrincipal("lambda.amazonaws.com"),
+        new ServicePrincipal("lambda.amazonaws.com")
       ),
       description:
-        "Allows the OversightML Tile Server Lambda Sweeper to access necessary AWS services (CW, SQS, DynamoDB, ...)",
+        "Allows the OversightML Tile Server Lambda Sweeper to access necessary AWS services (CW, SQS, DynamoDB, ...)"
     });
 
     const tsPolicy = new ManagedPolicy(this, "TSLambdaPolicy", {
-      managedPolicyName: "TSLambdaPolicy",
+      managedPolicyName: "TSLambdaPolicy"
     });
 
     // Add permissions for AWS DynamoDb Service (DDB)
@@ -86,8 +86,8 @@ export class TSLambdaRole extends Construct {
       effect: Effect.ALLOW,
       actions: ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem"],
       resources: [
-        `arn:${this.partition}:dynamodb:${props.account.region}:${props.account.id}:*`,
-      ],
+        `arn:${this.partition}:dynamodb:${props.account.region}:${props.account.id}:*`
+      ]
     });
 
     // Add permissions for the Lambda to have access to EC2 VPCs / Subnets / ELB
@@ -95,8 +95,8 @@ export class TSLambdaRole extends Construct {
       effect: Effect.ALLOW,
       actions: ["lambda:GetFunctionConfiguration"],
       resources: [
-        `arn:${this.partition}:lambda:${props.account.region}:${props.account.id}:function:*`,
-      ],
+        `arn:${this.partition}:lambda:${props.account.region}:${props.account.id}:function:*`
+      ]
     });
 
     // Add permissions for the Lambda to have access to EC2 VPCs / Subnets / ELB
@@ -108,9 +108,9 @@ export class TSLambdaRole extends Construct {
         "ec2:DescribeNetworkInterfaces",
         "ec2:DeleteNetworkInterface",
         "ec2:DescribeInstances",
-        "ec2:AttachNetworkInterface",
+        "ec2:AttachNetworkInterface"
       ],
-      resources: ["*"],
+      resources: ["*"]
     });
 
     // Add permissions for AWS Cloudwatch Event (DDB)
@@ -119,18 +119,18 @@ export class TSLambdaRole extends Construct {
       actions: [
         "logs:CreateLogGroup",
         "logs:CreateLogStream",
-        "logs:PutLogEvents",
+        "logs:PutLogEvents"
       ],
       resources: [
-        `arn:${this.partition}:logs:${props.account.region}:${props.account.id}:*`,
-      ],
+        `arn:${this.partition}:logs:${props.account.region}:${props.account.id}:*`
+      ]
     });
 
     tsPolicy.addStatements(
       ddbPolicyStatement,
       lambdaPolicyStatement,
       ec2NetworkPolicyStatement,
-      cwPolicyStatement,
+      cwPolicyStatement
     );
 
     tsLambdaRole.addManagedPolicy(tsPolicy);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 Amazon.com, Inc. or its affiliates.
+ * Copyright 2023-2026 Amazon.com, Inc. or its affiliates.
  */
 
 import { RemovalPolicy } from "aws-cdk-lib";
@@ -14,7 +14,7 @@ import {
   SubnetFilter,
   SubnetSelection,
   SubnetType,
-  Vpc,
+  Vpc
 } from "aws-cdk-lib/aws-ec2";
 import { LogGroup, RetentionDays } from "aws-cdk-lib/aws-logs";
 import { NagSuppressions } from "cdk-nag";
@@ -65,7 +65,7 @@ export class NetworkConfig extends BaseConfig {
       // Set default values here
       VPC_NAME: "tile-server-vpc",
       SECURITY_GROUP_NAME: "tile-server-security-group",
-      ...config,
+      ...config
     });
   }
 }
@@ -151,12 +151,12 @@ export class Network extends Construct {
     // If specified subnets are provided, use them
     if (this.config.TARGET_SUBNETS) {
       return this.vpc.selectSubnets({
-        subnetFilters: [SubnetFilter.byIds(this.config.TARGET_SUBNETS)],
+        subnetFilters: [SubnetFilter.byIds(this.config.TARGET_SUBNETS)]
       });
     } else {
       // Otherwise, select all private subnets
       return this.vpc.selectSubnets({
-        subnetType: SubnetType.PRIVATE_WITH_EGRESS,
+        subnetType: SubnetType.PRIVATE_WITH_EGRESS
       });
     }
   }
@@ -180,7 +180,7 @@ export class Network extends Construct {
       // Import existing VPC
       return Vpc.fromLookup(this, "ImportedVPC", {
         vpcId: this.config.VPC_ID,
-        isDefault: false,
+        isDefault: false
       });
     } else {
       const regionConfig = RegionalConfig.getConfig(props.account.region);
@@ -193,14 +193,14 @@ export class Network extends Construct {
           {
             cidrMask: 24,
             name: `${this.config.VPC_NAME}-Public`,
-            subnetType: SubnetType.PUBLIC,
+            subnetType: SubnetType.PUBLIC
           },
           {
             cidrMask: 24,
             name: `${this.config.VPC_NAME}-Private`,
-            subnetType: SubnetType.PRIVATE_WITH_EGRESS,
-          },
-        ],
+            subnetType: SubnetType.PRIVATE_WITH_EGRESS
+          }
+        ]
       });
 
       // Add VPC Flow Logs for compliance (required by AwsSolutions-VPC7)
@@ -211,12 +211,12 @@ export class Network extends Construct {
           : RetentionDays.ONE_WEEK,
         removalPolicy: props.account.prodLike
           ? RemovalPolicy.RETAIN
-          : RemovalPolicy.DESTROY,
+          : RemovalPolicy.DESTROY
       });
 
       vpc.addFlowLog("VPCFlowLog", {
         destination: FlowLogDestination.toCloudWatchLogs(flowLogGroup),
-        trafficType: FlowLogTrafficType.ALL,
+        trafficType: FlowLogTrafficType.ALL
       });
 
       return vpc;
@@ -236,7 +236,7 @@ export class Network extends Construct {
       return SecurityGroup.fromSecurityGroupId(
         this,
         "ImportedSecurityGroup",
-        this.config.SECURITY_GROUP_ID,
+        this.config.SECURITY_GROUP_ID
       );
     } else {
       // Create new security group with outbound access
@@ -244,14 +244,14 @@ export class Network extends Construct {
         securityGroupName: this.config.SECURITY_GROUP_NAME,
         vpc: this.vpc,
         description: "Security group with outbound and ALB access",
-        allowAllOutbound: true,
+        allowAllOutbound: true
       });
 
       // Add ingress rule for ALB listener (port 80)
       sg.addIngressRule(
         Peer.ipv4(this.vpc.vpcCidrBlock),
         Port.tcp(80),
-        "Allow inbound traffic to ALB on port 80",
+        "Allow inbound traffic to ALB on port 80"
       );
 
       // Add ingress rule for ALB to reach container if port is provided
@@ -259,7 +259,7 @@ export class Network extends Construct {
         sg.addIngressRule(
           Peer.ipv4(this.vpc.vpcCidrBlock),
           Port.tcp(this.containerPort),
-          `Allow ALB to reach container on port ${this.containerPort}`,
+          `Allow ALB to reach container on port ${this.containerPort}`
         );
       }
 
@@ -272,10 +272,10 @@ export class Network extends Construct {
           {
             id: "CdkNagValidationFailure",
             reason:
-              "Security group ingress rules use vpc.vpcCidrBlock which resolves to a CloudFormation intrinsic function at synth time. CDK NAG cannot validate tokens. The actual CIDR is scoped to the VPC CIDR block (e.g., 10.0.0.0/16), not 0.0.0.0/0",
-          },
+              "Security group ingress rules use vpc.vpcCidrBlock which resolves to a CloudFormation intrinsic function at synth time. CDK NAG cannot validate tokens. The actual CIDR is scoped to the VPC CIDR block (e.g., 10.0.0.0/16), not 0.0.0.0/0"
+          }
         ],
-        true,
+        true
       );
 
       return sg;

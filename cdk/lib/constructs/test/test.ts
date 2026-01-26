@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Amazon.com, Inc. or its affiliates.
+ * Copyright 2025-2026 Amazon.com, Inc. or its affiliates.
  */
 
 import { Duration, RemovalPolicy, SymlinkFollowMode } from "aws-cdk-lib";
@@ -52,7 +52,7 @@ export class TestConfig extends BaseConfig {
       TEST_CONTAINER_BUILD_TARGET: "integ",
       TEST_CONTAINER_DOCKERFILE: "docker/Dockerfile.integ",
       TEST_CONTAINER_URI: "awsosml/osml-tile-server-test:latest",
-      ...config,
+      ...config
     };
     super(mergedConfig);
   }
@@ -97,7 +97,7 @@ export class Test extends Construct {
     } else {
       // Create a new default configuration
       this.config = new TestConfig(
-        (props.config as unknown as Partial<ConfigType>) ?? {},
+        (props.config as unknown as Partial<ConfigType>) ?? {}
       );
     }
 
@@ -116,8 +116,8 @@ export class Test extends Construct {
           file: this.config.TEST_CONTAINER_DOCKERFILE,
           followSymlinks: SymlinkFollowMode.ALWAYS,
           target: this.config.TEST_CONTAINER_BUILD_TARGET,
-          platform: Platform.LINUX_AMD64,
-        },
+          platform: Platform.LINUX_AMD64
+        }
       );
     } else {
       // Use pre-built image from registry
@@ -126,7 +126,7 @@ export class Test extends Construct {
       return DockerImageCode.fromImageAsset(__dirname, {
         file: "Dockerfile.tmp",
         followSymlinks: SymlinkFollowMode.ALWAYS,
-        platform: Platform.LINUX_AMD64,
+        platform: Platform.LINUX_AMD64
       });
     }
   }
@@ -135,14 +135,14 @@ export class Test extends Construct {
     const logGroup = new LogGroup(this, "TSTestRunnerLogGroup", {
       logGroupName: "/aws/lambda/TSTestRunner",
       retention: RetentionDays.ONE_MONTH,
-      removalPolicy: RemovalPolicy.DESTROY, // Integ test logs are always safe to remove on destroy
+      removalPolicy: RemovalPolicy.DESTROY // Integ test logs are always safe to remove on destroy
     });
 
     const runner = new DockerImageFunction(this, "TSTestRunner", {
       code: this.testImageCode,
       vpc: props.vpc,
       vpcSubnets: {
-        subnetType: SubnetType.PRIVATE_WITH_EGRESS,
+        subnetType: SubnetType.PRIVATE_WITH_EGRESS
       },
       role: props.lambdaRole,
       timeout: Duration.minutes(10),
@@ -151,8 +151,8 @@ export class Test extends Construct {
       securityGroups: props.securityGroup ? [props.securityGroup] : [],
       logGroup: logGroup,
       environment: {
-        TS_ENDPOINT: `http://${props.serviceEndpointDnsName}/latest`,
-      },
+        TS_ENDPOINT: `http://${props.serviceEndpointDnsName}/latest`
+      }
     });
     return runner;
   }

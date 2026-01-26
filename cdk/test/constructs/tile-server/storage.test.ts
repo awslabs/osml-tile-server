@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 Amazon.com, Inc. or its affiliates.
+ * Copyright 2024-2026 Amazon.com, Inc. or its affiliates.
  */
 
 import { App, Aspects, RemovalPolicy, Stack } from "aws-cdk-lib";
@@ -22,7 +22,7 @@ describe("Storage", () => {
   beforeEach(() => {
     app = new App();
     stack = new Stack(app, "TestStack", {
-      env: { account: testAccount.id, region: testAccount.region },
+      env: { account: testAccount.id, region: testAccount.region }
     });
     vpc = new Vpc(stack, "TestVpc");
     config = new DataplaneConfig();
@@ -34,7 +34,7 @@ describe("Storage", () => {
         account: testAccount,
         vpc: vpc,
         config: config,
-        removalPolicy: RemovalPolicy.DESTROY,
+        removalPolicy: RemovalPolicy.DESTROY
       });
 
       expect(storage.fileSystem).toBeDefined();
@@ -43,14 +43,14 @@ describe("Storage", () => {
 
     it("creates storage resources with custom configuration", () => {
       const customConfig = new DataplaneConfig({
-        EFS_MOUNT_NAME: "custom-efs-mount",
+        EFS_MOUNT_NAME: "custom-efs-mount"
       });
 
       const storage = new Storage(stack, "TestStorage", {
         account: testAccount,
         vpc: vpc,
         config: customConfig,
-        removalPolicy: RemovalPolicy.DESTROY,
+        removalPolicy: RemovalPolicy.DESTROY
       });
 
       expect(storage.fileSystem).toBeDefined();
@@ -60,7 +60,7 @@ describe("Storage", () => {
     it("creates storage resources with security group", () => {
       const securityGroup = new SecurityGroup(stack, "TestSecurityGroup", {
         vpc: vpc,
-        description: "Test security group",
+        description: "Test security group"
       });
 
       const storage = new Storage(stack, "TestStorage", {
@@ -68,7 +68,7 @@ describe("Storage", () => {
         vpc: vpc,
         config: config,
         removalPolicy: RemovalPolicy.DESTROY,
-        securityGroup: securityGroup,
+        securityGroup: securityGroup
       });
 
       expect(storage.fileSystem).toBeDefined();
@@ -82,7 +82,7 @@ describe("Storage", () => {
         account: testAccount,
         vpc: vpc,
         config: config,
-        removalPolicy: RemovalPolicy.DESTROY,
+        removalPolicy: RemovalPolicy.DESTROY
       });
 
       const template = Template.fromStack(stack);
@@ -90,11 +90,11 @@ describe("Storage", () => {
       template.hasResourceProperties("AWS::EFS::FileSystem", {
         LifecyclePolicies: [
           {
-            TransitionToIA: "AFTER_14_DAYS",
-          },
+            TransitionToIA: "AFTER_14_DAYS"
+          }
         ],
         PerformanceMode: "generalPurpose",
-        ThroughputMode: "bursting",
+        ThroughputMode: "bursting"
       });
     });
 
@@ -103,13 +103,13 @@ describe("Storage", () => {
         account: testAccount,
         vpc: vpc,
         config: config,
-        removalPolicy: RemovalPolicy.RETAIN,
+        removalPolicy: RemovalPolicy.RETAIN
       });
 
       const template = Template.fromStack(stack);
 
       template.hasResource("AWS::EFS::FileSystem", {
-        DeletionPolicy: "Retain",
+        DeletionPolicy: "Retain"
       });
     });
 
@@ -118,7 +118,7 @@ describe("Storage", () => {
         account: testAccount,
         vpc: vpc,
         config: config,
-        removalPolicy: RemovalPolicy.DESTROY,
+        removalPolicy: RemovalPolicy.DESTROY
       });
 
       const template = Template.fromStack(stack);
@@ -130,7 +130,7 @@ describe("Storage", () => {
     it("creates file system with security group when provided", () => {
       const securityGroup = new SecurityGroup(stack, "TestSecurityGroup", {
         vpc: vpc,
-        description: "Test security group",
+        description: "Test security group"
       });
 
       new Storage(stack, "TestStorage", {
@@ -138,7 +138,7 @@ describe("Storage", () => {
         vpc: vpc,
         config: config,
         removalPolicy: RemovalPolicy.DESTROY,
-        securityGroup: securityGroup,
+        securityGroup: securityGroup
       });
 
       const template = Template.fromStack(stack);
@@ -160,7 +160,7 @@ describe("Storage", () => {
         account: testAccount,
         vpc: vpc,
         config: config,
-        removalPolicy: RemovalPolicy.DESTROY,
+        removalPolicy: RemovalPolicy.DESTROY
       });
 
       const template = Template.fromStack(stack);
@@ -174,19 +174,19 @@ describe("Storage", () => {
               Action: [
                 "elasticfilesystem:ClientMount",
                 "elasticfilesystem:ClientWrite",
-                "elasticfilesystem:ClientRootAccess",
+                "elasticfilesystem:ClientRootAccess"
               ],
               Principal: {
-                AWS: "*",
+                AWS: "*"
               },
               Condition: {
                 Bool: {
-                  "elasticfilesystem:AccessedViaMountTarget": "true",
-                },
-              },
-            },
-          ],
-        },
+                  "elasticfilesystem:AccessedViaMountTarget": "true"
+                }
+              }
+            }
+          ]
+        }
       });
     });
   });
@@ -197,7 +197,7 @@ describe("Storage", () => {
         account: testAccount,
         vpc: vpc,
         config: config,
-        removalPolicy: RemovalPolicy.DESTROY,
+        removalPolicy: RemovalPolicy.DESTROY
       });
 
       const template = Template.fromStack(stack);
@@ -208,34 +208,34 @@ describe("Storage", () => {
           CreationInfo: {
             OwnerGid: "1000",
             OwnerUid: "1000",
-            Permissions: "777",
-          },
+            Permissions: "777"
+          }
         },
         PosixUser: {
           Uid: "1000",
-          Gid: "1000",
-        },
+          Gid: "1000"
+        }
       });
     });
 
     it("creates access point with custom mount name", () => {
       const customConfig = new DataplaneConfig({
-        EFS_MOUNT_NAME: "custom-mount-point",
+        EFS_MOUNT_NAME: "custom-mount-point"
       });
 
       new Storage(stack, "TestStorage", {
         account: testAccount,
         vpc: vpc,
         config: customConfig,
-        removalPolicy: RemovalPolicy.DESTROY,
+        removalPolicy: RemovalPolicy.DESTROY
       });
 
       const template = Template.fromStack(stack);
 
       template.hasResourceProperties("AWS::EFS::AccessPoint", {
         RootDirectory: {
-          Path: "/custom-mount-point",
-        },
+          Path: "/custom-mount-point"
+        }
       });
     });
 
@@ -244,7 +244,7 @@ describe("Storage", () => {
         account: testAccount,
         vpc: vpc,
         config: config,
-        removalPolicy: RemovalPolicy.DESTROY,
+        removalPolicy: RemovalPolicy.DESTROY
       });
 
       const template = Template.fromStack(stack);
@@ -252,8 +252,8 @@ describe("Storage", () => {
       template.hasResourceProperties("AWS::EFS::AccessPoint", {
         PosixUser: {
           Uid: "1000",
-          Gid: "1000",
-        },
+          Gid: "1000"
+        }
       });
     });
 
@@ -262,7 +262,7 @@ describe("Storage", () => {
         account: testAccount,
         vpc: vpc,
         config: config,
-        removalPolicy: RemovalPolicy.DESTROY,
+        removalPolicy: RemovalPolicy.DESTROY
       });
 
       const template = Template.fromStack(stack);
@@ -272,9 +272,9 @@ describe("Storage", () => {
           CreationInfo: {
             OwnerGid: "1000",
             OwnerUid: "1000",
-            Permissions: "777",
-          },
-        },
+            Permissions: "777"
+          }
+        }
       });
     });
   });
@@ -285,24 +285,24 @@ describe("Storage", () => {
         account: testProdAccount,
         vpc: vpc,
         config: config,
-        removalPolicy: RemovalPolicy.RETAIN,
+        removalPolicy: RemovalPolicy.RETAIN
       });
 
       const template = Template.fromStack(stack);
 
       // Should create the same resources with RETAIN policy
       template.hasResource("AWS::EFS::FileSystem", {
-        DeletionPolicy: "Retain",
+        DeletionPolicy: "Retain"
       });
 
       template.hasResourceProperties("AWS::EFS::FileSystem", {
         LifecyclePolicies: [
           {
-            TransitionToIA: "AFTER_14_DAYS",
-          },
+            TransitionToIA: "AFTER_14_DAYS"
+          }
         ],
         PerformanceMode: "generalPurpose",
-        ThroughputMode: "bursting",
+        ThroughputMode: "bursting"
       });
     });
 
@@ -311,7 +311,7 @@ describe("Storage", () => {
         account: testAccount,
         vpc: vpc,
         config: config,
-        removalPolicy: RemovalPolicy.DESTROY,
+        removalPolicy: RemovalPolicy.DESTROY
       });
 
       const template = Template.fromStack(stack);
@@ -334,18 +334,18 @@ describe("Storage", () => {
         account: testAccount,
         vpc: vpc,
         config: config,
-        removalPolicy: RemovalPolicy.DESTROY,
+        removalPolicy: RemovalPolicy.DESTROY
       });
 
       const customConfig = new DataplaneConfig({
-        EFS_MOUNT_NAME: "second-mount",
+        EFS_MOUNT_NAME: "second-mount"
       });
 
       new Storage(stack, "TestStorage2", {
         account: testAccount,
         vpc: vpc,
         config: customConfig,
-        removalPolicy: RemovalPolicy.DESTROY,
+        removalPolicy: RemovalPolicy.DESTROY
       });
 
       const template = Template.fromStack(stack);
@@ -357,14 +357,14 @@ describe("Storage", () => {
       // Should have different access point paths
       template.hasResourceProperties("AWS::EFS::AccessPoint", {
         RootDirectory: {
-          Path: "/ts-efs-volume",
-        },
+          Path: "/ts-efs-volume"
+        }
       });
 
       template.hasResourceProperties("AWS::EFS::AccessPoint", {
         RootDirectory: {
-          Path: "/second-mount",
-        },
+          Path: "/second-mount"
+        }
       });
     });
   });
@@ -375,28 +375,28 @@ describe("Storage", () => {
         account: testAccount,
         vpc: vpc,
         config: config,
-        removalPolicy: RemovalPolicy.DESTROY,
+        removalPolicy: RemovalPolicy.DESTROY
       });
 
       const template = Template.fromStack(stack);
 
       // Should use general purpose performance mode (secure default)
       template.hasResourceProperties("AWS::EFS::FileSystem", {
-        PerformanceMode: "generalPurpose",
+        PerformanceMode: "generalPurpose"
       });
 
       // Should use bursting throughput mode (cost-effective default)
       template.hasResourceProperties("AWS::EFS::FileSystem", {
-        ThroughputMode: "bursting",
+        ThroughputMode: "bursting"
       });
 
       // Should have lifecycle policy to reduce costs
       template.hasResourceProperties("AWS::EFS::FileSystem", {
         LifecyclePolicies: [
           {
-            TransitionToIA: "AFTER_14_DAYS",
-          },
-        ],
+            TransitionToIA: "AFTER_14_DAYS"
+          }
+        ]
       });
 
       // Should have file system created with proper configuration
@@ -408,7 +408,7 @@ describe("Storage", () => {
         account: testAccount,
         vpc: vpc,
         config: config,
-        removalPolicy: RemovalPolicy.DESTROY,
+        removalPolicy: RemovalPolicy.DESTROY
       });
 
       const template = Template.fromStack(stack);
@@ -420,14 +420,14 @@ describe("Storage", () => {
             OwnerUid: "1000",
             OwnerGid: "1000",
             // Full permissions for the mount point
-            Permissions: "777",
-          },
+            Permissions: "777"
+          }
         },
         PosixUser: {
           // Non-root user for security
           Uid: "1000",
-          Gid: "1000",
-        },
+          Gid: "1000"
+        }
       });
     });
   });
@@ -438,7 +438,7 @@ describe("Storage", () => {
         account: testAccount,
         vpc: vpc,
         config: config,
-        removalPolicy: RemovalPolicy.DESTROY,
+        removalPolicy: RemovalPolicy.DESTROY
       });
 
       const template = Template.fromStack(stack);
@@ -460,21 +460,21 @@ describe("cdk-nag Compliance Checks - Storage", () => {
   beforeAll(() => {
     app = new App();
     stack = new Stack(app, "TestStack", {
-      env: { account: testAccount.id, region: testAccount.region },
+      env: { account: testAccount.id, region: testAccount.region }
     });
 
     const config = new DataplaneConfig();
 
     // Use Network construct instead of raw VPC for compliance
     const network = new Network(stack, "TestNetwork", {
-      account: testAccount,
+      account: testAccount
     });
 
     new Storage(stack, "TestStorage", {
       account: testAccount,
       vpc: network.vpc,
       config: config,
-      removalPolicy: RemovalPolicy.DESTROY,
+      removalPolicy: RemovalPolicy.DESTROY
     });
 
     // Add the cdk-nag AwsSolutions Pack with extra verbose logging enabled.
@@ -482,11 +482,11 @@ describe("cdk-nag Compliance Checks - Storage", () => {
 
     const errors = Annotations.fromStack(stack).findError(
       "*",
-      Match.stringLikeRegexp("AwsSolutions-.*"),
+      Match.stringLikeRegexp("AwsSolutions-.*")
     );
     const warnings = Annotations.fromStack(stack).findWarning(
       "*",
-      Match.stringLikeRegexp("AwsSolutions-.*"),
+      Match.stringLikeRegexp("AwsSolutions-.*")
     );
 
     generateNagReport(stack, errors, warnings);
@@ -495,7 +495,7 @@ describe("cdk-nag Compliance Checks - Storage", () => {
   test("No unsuppressed Warnings", () => {
     const warnings = Annotations.fromStack(stack).findWarning(
       "*",
-      Match.stringLikeRegexp("AwsSolutions-.*"),
+      Match.stringLikeRegexp("AwsSolutions-.*")
     );
     expect(warnings).toHaveLength(0);
   });
@@ -503,7 +503,7 @@ describe("cdk-nag Compliance Checks - Storage", () => {
   test("No unsuppressed Errors", () => {
     const errors = Annotations.fromStack(stack).findError(
       "*",
-      Match.stringLikeRegexp("AwsSolutions-.*"),
+      Match.stringLikeRegexp("AwsSolutions-.*")
     );
     expect(errors).toHaveLength(0);
   });
