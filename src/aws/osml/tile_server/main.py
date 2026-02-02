@@ -1,4 +1,4 @@
-#  Copyright 2023-2025 Amazon.com, Inc. or its affiliates.
+#  Copyright 2023-2026 Amazon.com, Inc. or its affiliates.
 
 import logging
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
@@ -16,6 +16,44 @@ from .app_config import ServerConfig
 from .services import get_aws_services
 from .utils import HealthCheck, ThreadingLocalContextFilter, configure_logger
 from .viewpoint import ViewpointWorker, viewpoint_router
+
+
+class ProxyHeadersMiddleware:
+    """
+    ASGI middleware that rewrites the request scope based on X-Forwarded-* headers.
+    This ensures request.url reflects the original client request when behind a reverse proxy.
+    """
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http":
+            headers = dict(scope.get("headers", []))
+
+            # Get X-Forwarded-Host and X-Forwarded-Proto
+            forwarded_host = headers.get(b"x-forwarded-host", b"").decode("latin-1")
+            forwarded_proto = headers.get(b"x-forwarded-proto", b"").decode("latin-1")
+
+            if forwarded_host:
+                # Rewrite the host header in the scope
+                new_headers = []
+                for key, value in scope.get("headers", []):
+                    if key == b"host":
+                        new_headers.append((b"host", forwarded_host.encode("latin-1")))
+                    else:
+                        new_headers.append((key, value))
+                scope = dict(scope)
+                scope["headers"] = new_headers
+
+                # When behind a proxy with X-Forwarded-Host, use https
+                scope["scheme"] = "https"
+            elif forwarded_proto:
+                scope = dict(scope)
+                scope["scheme"] = forwarded_proto
+
+        await self.app(scope, receive, send)
+
 
 # Configure GDAL to throw Python exceptions on errors
 gdal.UseExceptions()
@@ -113,10 +151,11 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_methods=["*"],
-    allow_headers=["X-Requested-With", "X-Request-ID"],
+    allow_headers=["*"],
     expose_headers=["X-Request-ID"],
 )
 app.add_middleware(CorrelationIdMiddleware)
+app.add_middleware(ProxyHeadersMiddleware)
 
 
 @app.get("/", response_class=HTMLResponse)

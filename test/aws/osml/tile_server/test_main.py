@@ -1,14 +1,133 @@
-#  Copyright 2023-2024 Amazon.com, Inc. or its affiliates.
+#  Copyright 2023-2026 Amazon.com, Inc. or its affiliates.
 
 import os
 import unittest
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import boto3
+import pytest
 from cryptography.fernet import Fernet
 from fastapi.testclient import TestClient
 from moto import mock_aws
 from test_config import TestConfig
+
+
+@pytest.fixture
+def proxy_middleware():
+    """Create a ProxyHeadersMiddleware with a mock app."""
+    from aws.osml.tile_server.main import ProxyHeadersMiddleware
+
+    mock_app = AsyncMock()
+    middleware = ProxyHeadersMiddleware(mock_app)
+    return middleware, mock_app
+
+
+@pytest.mark.asyncio
+async def test_proxy_middleware_with_forwarded_host_rewrites_host_and_scheme(proxy_middleware):
+    """Test that X-Forwarded-Host rewrites host header and sets scheme to https."""
+    middleware, mock_app = proxy_middleware
+    scope = {
+        "type": "http",
+        "scheme": "http",
+        "headers": [
+            (b"host", b"internal-lb.example.com"),
+            (b"x-forwarded-host", b"public.example.com"),
+            (b"x-forwarded-proto", b"http"),
+        ],
+    }
+
+    await middleware(scope, AsyncMock(), AsyncMock())
+
+    modified_scope = mock_app.call_args[0][0]
+    assert modified_scope["scheme"] == "https"
+    headers_dict = dict(modified_scope["headers"])
+    assert headers_dict[b"host"] == b"public.example.com"
+
+
+@pytest.mark.asyncio
+async def test_proxy_middleware_with_forwarded_proto_only_changes_scheme(proxy_middleware):
+    """Test that X-Forwarded-Proto alone only changes the scheme."""
+    middleware, mock_app = proxy_middleware
+    scope = {
+        "type": "http",
+        "scheme": "http",
+        "headers": [
+            (b"host", b"internal-lb.example.com"),
+            (b"x-forwarded-proto", b"https"),
+        ],
+    }
+
+    await middleware(scope, AsyncMock(), AsyncMock())
+
+    modified_scope = mock_app.call_args[0][0]
+    assert modified_scope["scheme"] == "https"
+    headers_dict = dict(modified_scope["headers"])
+    assert headers_dict[b"host"] == b"internal-lb.example.com"
+
+
+@pytest.mark.asyncio
+async def test_proxy_middleware_without_forwarded_headers_no_changes(proxy_middleware):
+    """Test that requests without forwarded headers pass through unchanged."""
+    middleware, mock_app = proxy_middleware
+    scope = {
+        "type": "http",
+        "scheme": "http",
+        "headers": [
+            (b"host", b"internal-lb.example.com"),
+            (b"content-type", b"application/json"),
+        ],
+    }
+
+    await middleware(scope, AsyncMock(), AsyncMock())
+
+    passed_scope = mock_app.call_args[0][0]
+    assert passed_scope["scheme"] == "http"
+    headers_dict = dict(passed_scope["headers"])
+    assert headers_dict[b"host"] == b"internal-lb.example.com"
+
+
+@pytest.mark.asyncio
+async def test_proxy_middleware_non_http_scope_passes_through(proxy_middleware):
+    """Test that non-HTTP scopes (like websocket) pass through unchanged."""
+    middleware, mock_app = proxy_middleware
+    scope = {
+        "type": "websocket",
+        "scheme": "ws",
+        "headers": [
+            (b"host", b"internal-lb.example.com"),
+            (b"x-forwarded-host", b"public.example.com"),
+        ],
+    }
+
+    await middleware(scope, AsyncMock(), AsyncMock())
+
+    passed_scope = mock_app.call_args[0][0]
+    assert passed_scope["scheme"] == "ws"
+    headers_dict = dict(passed_scope["headers"])
+    assert headers_dict[b"host"] == b"internal-lb.example.com"
+
+
+@pytest.mark.asyncio
+async def test_proxy_middleware_preserves_other_headers(proxy_middleware):
+    """Test that other headers are preserved when rewriting host."""
+    middleware, mock_app = proxy_middleware
+    scope = {
+        "type": "http",
+        "scheme": "http",
+        "headers": [
+            (b"host", b"internal-lb.example.com"),
+            (b"x-forwarded-host", b"public.example.com"),
+            (b"authorization", b"Bearer token123"),
+            (b"content-type", b"application/json"),
+        ],
+    }
+
+    await middleware(scope, AsyncMock(), AsyncMock())
+
+    modified_scope = mock_app.call_args[0][0]
+    headers_dict = dict(modified_scope["headers"])
+    assert headers_dict[b"authorization"] == b"Bearer token123"
+    assert headers_dict[b"content-type"] == b"application/json"
 
 
 @mock_aws

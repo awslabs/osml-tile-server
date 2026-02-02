@@ -1,4 +1,4 @@
-#  Copyright 2023-2025 Amazon.com, Inc. or its affiliates.
+#  Copyright 2023-2026 Amazon.com, Inc. or its affiliates.
 
 import inspect
 import logging
@@ -52,7 +52,7 @@ viewpoint_router = APIRouter(
 )
 
 
-@viewpoint_router.get("/")
+@viewpoint_router.get("")
 @version(1, 0)
 def list_viewpoints(
     aws: Annotated[get_aws_services, Depends()],
@@ -108,7 +108,7 @@ def list_viewpoints(
         raise HTTPException(status_code=500, detail="Failed to list viewpoints")
 
 
-@viewpoint_router.post("/", status_code=status.HTTP_201_CREATED)
+@viewpoint_router.post("", status_code=status.HTTP_201_CREATED)
 def create_viewpoint(
     viewpoint_request: ViewpointRequest, aws: Annotated[get_aws_services, Depends()], response: Response
 ) -> Dict[str, Any]:
@@ -161,7 +161,7 @@ def create_viewpoint(
     return db_response
 
 
-@viewpoint_router.put("/", status_code=status.HTTP_201_CREATED)
+@viewpoint_router.put("", status_code=status.HTTP_201_CREATED)
 def update_viewpoint(viewpoint_request: ViewpointUpdate, aws: Annotated[get_aws_services, Depends()]) -> ViewpointModel:
     """
     Change a viewpoint that already exists. This operation can be called to update an existing viewpoint
