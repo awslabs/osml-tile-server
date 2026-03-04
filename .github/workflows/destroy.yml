@@ -42,9 +42,19 @@ jobs:
         with:
           account_id: ${{ secrets.TILE_SERVER_ACCOUNT_ID }}
           build_from_source: 'false'
-      - name: Build CDK
+      - name: Build and synthesize CDK
         working-directory: cdk
-        run: npm run build
+        run: |
+          npm run build
+          cdk synth
+      - name: Read deployment config
+        id: config
+        working-directory: cdk
+        run: |
+          PROJECT_NAME=$(python3 -c "import json; print(json.load(open('bin/deployment/deployment.json'))['projectName'])")
+          echo "project_name=${PROJECT_NAME}" >> "$GITHUB_OUTPUT"
       - name: Destroy CDK infrastructure
         working-directory: cdk
-        run: cdk destroy --all --force
+        env:
+          PROJECT_NAME: ${{ steps.config.outputs.project_name }}
+        run: bash ../scripts/destroy.sh "${PROJECT_NAME}"

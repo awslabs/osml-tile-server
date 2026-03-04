@@ -124,11 +124,21 @@ export class LambdaRole extends Construct {
       ]
     });
 
+    // Add permissions to read SSM parameters (tile server endpoint)
+    const ssmPolicyStatement = new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: ["ssm:GetParameter"],
+      resources: [
+        `arn:${this.partition}:ssm:${props.account.region}:${props.account.id}:parameter/*`
+      ]
+    });
+
     policy.addStatements(
       ddbPolicyStatement,
       lambdaPolicyStatement,
       ec2NetworkPolicyStatement,
-      cwPolicyStatement
+      cwPolicyStatement,
+      ssmPolicyStatement
     );
 
     lambdaRole.addManagedPolicy(policy);

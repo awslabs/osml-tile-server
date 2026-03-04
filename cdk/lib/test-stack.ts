@@ -28,8 +28,6 @@ export interface TestStackProps extends StackProps {
   deployment: DeploymentConfig;
   /** The VPC to use for the test imagery. */
   vpc: IVpc;
-  /** The tile server service endpoint DNS name (from Dataplane stack export). */
-  serviceEndpointDnsName: string;
   /** Optional existing Lambda role to use. */
   existingLambdaRole?: IRole;
   /** Optional security group to use. */
@@ -61,6 +59,10 @@ export class TestStack extends Stack {
 
     this.deployment = props.deployment;
 
+    // Pass the SSM parameter name so the lambda can resolve the tile server
+    // ALB DNS at runtime. This avoids any CDK dependency between stacks.
+    const ssmParamName = `/${props.deployment.projectName}/tile-server/lb-dns`;
+
     // Create the test imagery construct
     this.testImagery = new TestImagery(this, "TestImagery", {
       account: {
@@ -84,7 +86,7 @@ export class TestStack extends Stack {
       vpc: props.vpc,
       lambdaRole: this.role.lambdaRole,
       securityGroup: props.securityGroup,
-      serviceEndpointDnsName: props.serviceEndpointDnsName,
+      serviceEndpointSsmParam: ssmParamName,
       config: this.deployment.testConfig
     });
   }

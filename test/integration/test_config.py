@@ -1,13 +1,35 @@
-#  Copyright 2024-2025 Amazon.com, Inc. or its affiliates.
+#  Copyright 2024-2026 Amazon.com, Inc. or its affiliates.
 import os
 from datetime import datetime, timezone
 from typing import Any, Dict
+
+import boto3
+
+
+def _resolve_endpoint() -> str:
+    """Resolve the tile server endpoint.
+
+    If TS_ENDPOINT is set directly, use it. Otherwise, read the SSM parameter
+    name from TS_ENDPOINT_SSM_PARAM and fetch the value at runtime.
+    """
+    direct = os.getenv("TS_ENDPOINT")
+    if direct:
+        return direct
+
+    ssm_param = os.getenv("TS_ENDPOINT_SSM_PARAM")
+    if ssm_param:
+        ssm = boto3.client("ssm")
+        resp = ssm.get_parameter(Name=ssm_param)
+        dns = resp["Parameter"]["Value"]
+        return f"http://{dns}/latest"
+
+    raise RuntimeError("Neither TS_ENDPOINT nor TS_ENDPOINT_SSM_PARAM is set")
 
 
 class TileServerIntegTestConfig:
     def __init__(self, s3_bucket: str, s3_key: str):
         # Tile Server
-        self.endpoint = os.getenv("TS_ENDPOINT")
+        self.endpoint = _resolve_endpoint()
 
         # S3
         self.test_bucket = s3_bucket
