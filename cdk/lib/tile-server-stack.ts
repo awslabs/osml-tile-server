@@ -4,6 +4,7 @@
 
 import { App, CfnOutput, Environment, Stack, StackProps } from "aws-cdk-lib";
 import { ISecurityGroup, IVpc } from "aws-cdk-lib/aws-ec2";
+import { StringParameter } from "aws-cdk-lib/aws-ssm";
 
 import { DeploymentConfig } from "../bin/deployment/load-deployment";
 import { Dataplane, DataplaneConfig } from "./constructs/tile-server/dataplane";
@@ -60,6 +61,14 @@ export class TileServerStack extends Stack {
       value: this.loadBalancerDnsName,
       description: "DNS name of the Tile Server Application Load Balancer",
       exportName: `${this.deployment.projectName}-LoadBalancerDNS`
+    });
+
+    // Store the ALB DNS name in SSM for consumption without creating
+    // a CloudFormation cross-stack reference.
+    new StringParameter(this, "LoadBalancerDnsParam", {
+      parameterName: `/${this.deployment.projectName}/tile-server/lb-dns`,
+      stringValue: this.loadBalancerDnsName,
+      description: "DNS name of the Tile Server ALB"
     });
   }
 }

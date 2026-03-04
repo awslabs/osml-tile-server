@@ -55,38 +55,30 @@ const networkStack = new NetworkStack(
 // Define and Deploy the OSMLTileServerStack
 // -----------------------------------------------------------------------------
 
-const tileServerStack = new TileServerStack(
-  app,
-  `${deployment.projectName}-Dataplane`,
-  {
-    env: {
-      account: deployment.account.id,
-      region: deployment.account.region
-    },
-    deployment: deployment,
-    vpc: networkStack.network.vpc,
-    securityGroup: networkStack.network.securityGroup,
-    description:
-      "TileServer, Guidance for Processing Overhead Imagery on AWS (SO9240)"
-  }
-);
-
-tileServerStack.node.addDependency(networkStack);
+new TileServerStack(app, `${deployment.projectName}-Dataplane`, {
+  env: {
+    account: deployment.account.id,
+    region: deployment.account.region
+  },
+  deployment: deployment,
+  vpc: networkStack.network.vpc,
+  securityGroup: networkStack.network.securityGroup,
+  description:
+    "TileServer, Guidance for Processing Overhead Imagery on AWS (SO9240)"
+});
 
 // -----------------------------------------------------------------------------
 // Deploy the TestStack (if integration tests enabled)
 // -----------------------------------------------------------------------------
 
 if (deployment.deployIntegrationTests) {
-  const testStack = new TestStack(app, `${deployment.projectName}-Test`, {
+  new TestStack(app, `${deployment.projectName}-IntegrationTest`, {
     env: {
       account: deployment.account.id,
       region: deployment.account.region
     },
     deployment: deployment,
     vpc: networkStack.network.vpc,
-    serviceEndpointDnsName: tileServerStack.loadBalancerDnsName,
     securityGroup: networkStack.network.securityGroup
   });
-  testStack.node.addDependency(tileServerStack);
 }
