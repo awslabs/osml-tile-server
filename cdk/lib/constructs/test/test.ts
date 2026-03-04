@@ -66,8 +66,8 @@ export interface TestProps {
 
   readonly lambdaRole: IRole;
   readonly securityGroup?: ISecurityGroup;
-  /** The tile server service endpoint DNS name (from Dataplane stack export). */
-  readonly serviceEndpointDnsName: string;
+  /** The SSM parameter name containing the tile server ALB DNS. */
+  readonly serviceEndpointSsmParam: string;
   /** The test configuration. */
   readonly config?: TestConfig;
 }
@@ -151,7 +151,7 @@ export class Test extends Construct {
       securityGroups: props.securityGroup ? [props.securityGroup] : [],
       logGroup: logGroup,
       environment: {
-        TS_ENDPOINT: `http://${props.serviceEndpointDnsName}/latest`
+        TS_ENDPOINT_SSM_PARAM: props.serviceEndpointSsmParam
       }
     });
     return runner;

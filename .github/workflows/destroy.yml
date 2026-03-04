@@ -42,9 +42,45 @@ jobs:
         with:
           account_id: ${{ secrets.TILE_SERVER_ACCOUNT_ID }}
           build_from_source: 'false'
-      - name: Build CDK
+      - name: Build and synthesize CDK
         working-directory: cdk
-        run: npm run build
-      - name: Destroy CDK infrastructure
+        run: |
+          npm run build
+          cdk synth
+      - name: Read deployment config
+        id: config
         working-directory: cdk
-        run: cdk destroy --all --force
+        run: |
+          PROJECT_NAME=$(python3 -c "import json; print(json.load(open('bin/deployment/deployment.json'))['projectName'])")
+          echo "project_name=${PROJECT_NAME}" >> "$GITHUB_OUTPUT"
+      - name: Destroy dataplane and test stacks in parallel
+        working-directory: cdk
+        env:
+          PROJECT_NAME: ${{ steps.config.outputs.project_name }}
+        run: |
+          cdk destroy "${PROJECT_NAME}-Dataplane" --exclusively --app cdk.out --force &
+          PID_DP=$!
+
+          PID_IT=""
+          if aws cloudformation describe-stacks --stack-name "${PROJECT_NAME}-IntegrationTest" > /dev/null 2>&1; then
+            cdk destroy "${PROJECT_NAME}-IntegrationTest" --exclusively --app cdk.out --force &
+            PID_IT=$!
+          else
+            echo "No integration test stack found, skipping"
+          fi
+
+          FAILED=0
+          wait ${PID_DP} || FAILED=1
+          if [ -n "${PID_IT}" ]; then
+            wait ${PID_IT} || FAILED=1
+          fi
+
+          if [ ${FAILED} -ne 0 ]; then
+            echo "::error::One or more stack destroys failed"
+            exit 1
+          fi
+      - name: Destroy network stack
+        working-directory: cdk
+        env:
+          PROJECT_NAME: ${{ steps.config.outputs.project_name }}
+        run: cdk destroy "${PROJECT_NAME}-Network" --exclusively --app cdk.out --force
